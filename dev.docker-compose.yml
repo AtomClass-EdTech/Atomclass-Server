@@ -1,0 +1,69 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DEV_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DEV_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DEV_DB_NAME:-atomclass_dev}
+    ports:
+      - "8832:5432"
+    volumes:
+      - db-atom-class:/var/lib/postgresql/data
+    restart: on-failure
+    networks:
+      - atom-class-dev-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "8879:6379"
+    volumes:
+      - redis-data:/data
+    restart: on-failure
+    networks:
+      - atom-class-dev-network
+
+  server:
+    build:
+      context: ./
+      dockerfile: dev.Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8888:3000"
+      - "8829:9229" # debugger port
+      - "8828:3001" # socket port
+    volumes:
+      - ./:/app
+    environment:
+      NODE_NO_WARNINGS: 1
+      NODE_ENV: development
+      DEV_DB_HOST: postgres
+      DEV_DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3000
+      SOCKET_PORT: 3001
+      AWS_REGION: ap-south-1
+      CRYPTO_ALGORITHM: aes-256-cbc
+      CRYPTO_SECURITY_KEY: myEncryptionKey
+    command: yarn nodemon-dev
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - atom-class-dev-network
+
+volumes:
+  db-atom-class:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  atom-class-dev-network:
+    driver: bridge
