@@ -8,6 +8,17 @@ import { errorHandler } from "./helpers/errorHandler.js";
 import { databaseConfig } from "./config/index.js";
 import { loadEnv } from "./config/loadEnv.js";
 
+// Add better error handling
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 loadEnv();
 
 const PORT = process.env.PORT || 8000;
@@ -41,6 +52,7 @@ export const corsOriginValidator = (origin: any, callback: any) => {
 
 const app = express();
 
+// Set up all middleware BEFORE starting the server
 app.use(cors({ origin: "*" }));
 app.use((_req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -53,33 +65,60 @@ app.use((_req, res, next) => {
   next();
 });
 
-//Initializing DB
+// Make public images available to application
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(express.urlencoded({ extended: true }));
+
+// Parse application/json
+app.use(
+  express.json({
+    verify: (req: Request, _res: Response, buffer: Buffer) => {
+      req.rawBody = buffer;
+    },
+  }),
+);
+
+// Connect the routes
+app.use(Routers);
+
+// Error handler should be last
+app.use(errorHandler);
+
+// Add a health check route
+app.get('/health', (_req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Initialize DB and start server
 AppDataSource.initialize()
   .then(() => {
-    app.listen(PORT, async () => {
-      console.log("DB Initiated successfully");
+    console.log("DB Initiated successfully");
+    
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-
-      //make public images avaialble to application
-      app.use(express.static(__dirname + "/public"));
-
-      app.use(express.urlencoded({ extended: true }));
-      // parse application/json
-      app.use(
-        express.json({
-          verify: (req: Request, _res: Response, buffer: Buffer) => {
-            req.rawBody = buffer;
-          },
-        }),
-      );
-
-      // Connecting the routes!
-      app.use(Routers);
-
-      app.use(errorHandler);
-     
+      console.log(`Health check available at http://localhost:8888/health`);
     });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('Process terminated');
+        process.exit(0);
+      });
+    });
+
+    process.on('SIGINT', () => {
+      console.log('SIGINT received, shutting down gracefully');
+      server.close(() => {
+        console.log('Process terminated');
+        process.exit(0);
+      });
+    });
+
   })
   .catch((err) => {
     console.error("Error during Data Source initialization", err);
+    process.exit(1);
   });

@@ -1,8 +1,16 @@
 import { DataSource } from "typeorm";
 import { User } from "../entities/User.js";
 import { EnvironmentTypes } from "../utils/index.js";
-import { Config } from "../entities/Config.js";
 import { loadEnv } from "./loadEnv.js";
+import { Organization } from "../entities/Organization.js";
+import { Role } from "../entities/Role.js";
+import { Course } from "../entities/Course.js";
+import { Section } from "../entities/Section.js";
+import { Lesson } from "../entities/Lesson.js";
+import { VideoAsset } from "../entities/VideoAsset.js";
+import { Order } from "../entities/Order.js";
+import { Payment } from "../entities/Payment.js";
+import { Enrollment } from "../entities/Enrollment.js";
 
 loadEnv();
 
@@ -19,18 +27,18 @@ export const dbConfig: Record<
   Record<(typeof dbConfigurationKeys)[number], any>
 > = {
   development: {
-    username: process.env.DEV_DB_USERNAME,
-    password: process.env.DEV_DB_PASSWORD,
-    database: process.env.DEV_DB_NAME,
-    host: process.env.DEV_DB_HOST, 
-    port: process.env.DEV_DB_PORT,
-  }, 
+    username: "postgres",
+    password: "TotalProfit1!",
+    database: "atomclass",
+    host: "kundankishoredb.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
+    port: 5432,
+  },
   production: {
-    username: process.env.PROD_DB_USERNAME,
-    password: process.env.PROD_DB_PASSWORD,
-    database: process.env.PROD_DB_NAME,
-    host: process.env.PROD_DB_HOST,
-    port: process.env.PROD_DB_PORT,
+    username: "postgres",
+    password: "TotalProfit1!",
+    database: "atomclass",
+    host: "kundankishoredb.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
+    port: 5432,
   },
 };
 
@@ -45,19 +53,16 @@ if (!username || !password || !database || !host) {
 }
 
 export const AppDataSource = new DataSource({
-  ssl:
-    process.env.NODE_ENV === "development"
-      ? false
-      : {
-          rejectUnauthorized: false,
-        },
+   ssl: {
+    rejectUnauthorized: false
+  },
   type: "postgres",
   username,
   password,
   host,
   port: Number.isNaN(portNumber) ? 5432 : portNumber,
   database,
-  entities: [User, Config],
+  entities: [Organization, Role, User, Course, Section, Lesson, VideoAsset, Order, Payment, Enrollment],
   subscribers: ["src/subscribers/**/*.{ts,js}"],
   synchronize: true,
   logging: false,
