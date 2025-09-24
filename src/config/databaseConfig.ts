@@ -1,3 +1,5 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import { DataSource } from "typeorm";
 import { User } from "../entities/User.js";
 import { EnvironmentTypes } from "../utils/index.js";
@@ -52,9 +54,21 @@ if (!username || !password || !database || !host) {
   throw new Error("Database configuration is incomplete. Check your environment variables.");
 }
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const runningTs = __filename.endsWith(".ts");
+
+const migrationsGlobs = runningTs
+  ? ["src/migrations/**/*.ts"]
+  : [path.join(__dirname, "../migrations/**/*.js")];
+
+const subscribersGlobs = runningTs
+  ? ["src/subscribers/**/*.{ts,js}"]
+  : [path.join(__dirname, "../subscribers/**/*.js")];
+
 export const AppDataSource = new DataSource({
-   ssl: {
-    rejectUnauthorized: false
+  ssl: {
+    rejectUnauthorized: false,
   },
   type: "postgres",
   username,
@@ -63,9 +77,9 @@ export const AppDataSource = new DataSource({
   port: Number.isNaN(portNumber) ? 5432 : portNumber,
   database,
   entities: [Organization, Role, User, Course, Section, Lesson, VideoAsset, Order, Payment, Enrollment],
-  subscribers: ["src/subscribers/**/*.{ts,js}"],
+  subscribers: subscribersGlobs,
   synchronize: true,
   logging: false,
-  migrations: ["src/migrations/**/*.ts"],
+  migrations: migrationsGlobs,
   migrationsTableName: "migrations",
 });
