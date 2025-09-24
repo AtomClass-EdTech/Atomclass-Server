@@ -1,30 +1,34 @@
 import { FindManyOptions, FindOneOptions } from "typeorm";
 import { AppDataSource } from "../config/databaseConfig.js";
-import { User } from "../entities/User.js";
+import { User, UserRole } from "../entities/User.js";
 
 export const userService = {
-  createUserData: async (
-    email: string,
-    firstName: string,
-    lastName: string,
-    phoneNumber: string,
-    userId?: string,
-  ): Promise<User> => {
-    const user = new User();
-    const emailExist = await userService.getUserByEmail(email.toLowerCase());
-
-    if (emailExist?.id) {
-      throw Error("Email Id exist already!");
-    }
-
-    if (userId) {
-      user.id = userId;
-    }
-    user.email = email.toLowerCase();
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.phoneNumber = phoneNumber;
+  createUserData: async (userPayload: Partial<User>): Promise<User> => {
     const userRepository = AppDataSource.getRepository(User);
+
+    if (!userPayload.email) {
+      throw new Error("Email is required to create a user");
+    }
+
+    const normalizedEmail = userPayload.email.toLowerCase().trim();
+    const existingUser = await userService.getUserByEmail(normalizedEmail);
+
+    if (existingUser?.id) {
+      throw new Error("Email is already registered. Please log in.");
+    }
+
+    const user = new User();
+
+    Object.assign(user, {
+      ...userPayload,
+      email: normalizedEmail,
+      fullName: userPayload.fullName?.trim() ?? userPayload.fullName ?? null,
+      role: userPayload.role ?? UserRole.USER,
+      isActive: userPayload.isActive ?? true,
+      isVerified: userPayload.isVerified ?? false,
+      loginCount: userPayload.loginCount ?? 0,
+    });
+
     const savedUser = await userRepository.save(user);
     return savedUser;
   },

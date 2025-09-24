@@ -1,124 +1,111 @@
-import express, { Request, Response } from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import cors from "cors";
+import { v4 as uuidv4 } from "uuid";
 
-import Routers from "./routes/index.js";
-import { errorHandler } from "./helpers/errorHandler.js";
-import { databaseConfig } from "./config/index.js";
-import { loadEnv } from "./config/loadEnv.js";
+export type EnvironmentTypes = "development" | "production";
 
-// Add better error handling
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-loadEnv();
-
-const PORT = process.env.PORT || 8000;
-//@ts-ignore
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const { AppDataSource } = databaseConfig;
-
-export const corsOriginValidator = (origin: any, callback: any) => {
-  // Allow specific origins
-  const allowedOrigins = [
-    "http://localhost:8888",
-    "http://localhost:3000",
-    `http://localhost:${PORT}`,
-    ...JSON.parse(process.env.allowedOrigins || "[]"),
-  ];
-
-  // Check if the requested origin is in the allowed origins list
-  if (
-    !origin ||
-    allowedOrigins.includes(origin) ||
-    process.env?.allowAllOrigins
-  ) {
-    console.log("Should all cors");
-    callback(null, true);
-  } else {
-    callback(new Error("Not allowed by CORS"));
-  }
+const generatePrefixedUUID = (prefix = ""): string => {
+  return prefix + uuidv4().slice(prefix.length);
 };
 
-const app = express();
+const generateSecurePassword = () => {
+  const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lowercase = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const specialChars = "!@#$%^&*";
 
-// Set up all middleware BEFORE starting the server
-app.use(cors({ origin: "*" }));
-app.use((_req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept",
+  const allChars = uppercase + lowercase + numbers + specialChars;
+
+  return (
+    uppercase[Math.floor(Math.random() * uppercase.length)] +
+    lowercase[Math.floor(Math.random() * lowercase.length)] +
+    numbers[Math.floor(Math.random() * numbers.length)] +
+    specialChars[Math.floor(Math.random() * specialChars.length)] +
+    Array.from(
+      { length: 4 },
+      () => allChars[Math.floor(Math.random() * allChars.length)],
+    ).join("")
+  )
+    .split("")
+    .sort(() => Math.random() - 0.5) // Shuffle the password to mix characters
+    .join("");
+};
+
+const generateRandomPassword = (length: number): string => {
+  const lowercaseCharset = "abcdefghijklmnopqrstuvwxyz";
+  const uppercaseCharset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const numberCharset = "0123456789";
+  const specialCharset = "!@#$%^&*()_+-=";
+
+  let password = "";
+  let hasUppercase = false;
+  let hasNumber = false;
+  let hasSpecialChar = false;
+
+  // Generate the base password with lowercase letters
+  for (let i = 0; i < length - 3; i++) {
+    const randomIndex = Math.floor(Math.random() * lowercaseCharset.length);
+    password += lowercaseCharset[randomIndex];
+  }
+
+  // Add at least one uppercase letter
+  const randomUppercaseIndex = Math.floor(
+    Math.random() * uppercaseCharset.length,
   );
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
+  password += uppercaseCharset[randomUppercaseIndex];
+  hasUppercase = true;
 
-// Make public images available to application
-app.use(express.static(path.join(__dirname, "public")));
+  // Add at least one number
+  const randomNumberIndex = Math.floor(Math.random() * numberCharset.length);
+  password += numberCharset[randomNumberIndex];
+  hasNumber = true;
 
-app.use(express.urlencoded({ extended: true }));
+  // Add at least one special character
+  const randomSpecialCharIndex = Math.floor(
+    Math.random() * specialCharset.length,
+  );
+  password += specialCharset[randomSpecialCharIndex];
+  hasSpecialChar = true;
 
-// Parse application/json
-app.use(
-  express.json({
-    verify: (req: Request, _res: Response, buffer: Buffer) => {
-      req.rawBody = buffer;
-    },
-  }),
-);
+  // Shuffle the password characters using Fisher-Yates algorithm
+  const passwordArray = password.split("");
+  for (let i = passwordArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [passwordArray[i], passwordArray[j]] = [passwordArray[j], passwordArray[i]];
+  }
+  password = passwordArray.join("");
 
-// Connect the routes
-app.use(Routers);
+  // Check if all required character types are present
+  if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+    // Recursively generate a new password if any required character type is missing
+    return generateRandomPassword(length);
+  }
 
-// Error handler should be last
-app.use(errorHandler);
+  return password;
+};
 
-// Add a health check route
-app.get('/health', (_req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+// sleep time expects milliseconds
+const sleep = (time: number) => {
+  return new Promise((resolve) => setTimeout(resolve, time));
+};
 
-// Initialize DB and start server
-AppDataSource.initialize()
-  .then(() => {
-    console.log("DB Initiated successfully");
-    
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Health check available at http://localhost:8888/health`);
-    });
+const formatPhoneNumber = (
+  phoneNumber: string = "",
+  internationalDialingCode = "+1",
+): string => {
+  if (phoneNumber.startsWith("+")) {
+    return phoneNumber; //we assume it is already formatted
+  }
+  const numericPhoneNumber = phoneNumber.replace(/\D/g, "");
+  if (numericPhoneNumber.length !== 10) {
+    return "";
+  }
+  const formattedPhoneNumber = `${internationalDialingCode}${numericPhoneNumber}`;
+  return formattedPhoneNumber;
+};
 
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-      console.log('SIGTERM received, shutting down gracefully');
-      server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
-      });
-    });
-
-    process.on('SIGINT', () => {
-      console.log('SIGINT received, shutting down gracefully');
-      server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
-      });
-    });
-
-  })
-  .catch((err) => {
-    console.error("Error during Data Source initialization", err);
-    process.exit(1);
-  });
+export {
+  generatePrefixedUUID,
+  generateRandomPassword,
+  sleep,
+  formatPhoneNumber,
+  generateSecurePassword,
+};

@@ -1,24 +1,25 @@
-FROM node:20.0.0-alpine
-ENV NODE_ENV=development
+# Use rolling latest Node 20.x (includes >=20.6 with node:module.register)
+FROM node:20-alpine
 
-# Set the working directory in the container
+ENV NODE_ENV=development
 WORKDIR /app
 
-RUN apk add --update python3 make g++ && rm -rf /var/cache/apk/*
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
 
+# Enable Yarn via Corepack
 RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 
-# Copy package.json and yarn.lock to the container
+# Copy manifests first (better caching)
 COPY package.json yarn.lock ./
 
-# Install dependencies
+# Install deps
 RUN yarn install --silent --force --frozen-lockfile
 
-# Copy the rest of the application code to the container
+# Copy source
 COPY . .
 
-# Expose the application port (if required)
 EXPOSE 3000
 
-# Set the command to run the application using nodemon
+# Default dev command
 CMD ["yarn", "nodemon-dev"]
