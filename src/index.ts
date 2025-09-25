@@ -92,7 +92,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-app.use(Routers);
+app.use(`/api/v1/${Routers}`);
 app.use(errorHandler);
 
 const startServer = async () => {
