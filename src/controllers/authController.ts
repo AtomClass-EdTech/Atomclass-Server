@@ -11,6 +11,10 @@ import { OtpType, User, UserRole } from "../entities/User.js";
 import { OTPService } from "../utils/otp.js";
 import { EmailService } from "../utils/emailHelper.js";
 import { AuthRequest } from "../types/auth.req.types.js";
+import {
+  getNormalizedCognitoGroups,
+  readCognitoGroupsFromPayload,
+} from "../utils/cognitoGroups.js";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -89,7 +93,18 @@ const login = async (req: Request, res: Response) => {
       await userRepository.save(userInfo);
     }
 
-    const decodedToken = tokens.AccessToken ? decodeTokenPayload(tokens.AccessToken) : undefined;
+    const decodedToken = tokens.AccessToken
+      ? decodeTokenPayload(tokens.AccessToken)
+      : undefined;
+    const decodedPayload = decodedToken && typeof decodedToken === "object"
+      ? (decodedToken as Record<string, unknown>)
+      : undefined;
+    const cognitoGroups = decodedPayload
+      ? readCognitoGroupsFromPayload(decodedPayload)
+      : [];
+    const normalizedGroups = decodedPayload
+      ? getNormalizedCognitoGroups(decodedPayload)
+      : [];
     res.json({
       tokens,
       user: {
@@ -98,8 +113,12 @@ const login = async (req: Request, res: Response) => {
         fullName: userInfo?.fullName,
         role: userInfo?.role,
         isVerified: userInfo?.isVerified,
+        cognitoGroups,
+        normalizedGroups,
       },
       username: decodedToken?.username,
+      cognitoGroups,
+      normalizedGroups,
     });
   } catch (err: unknown) {
     if (err instanceof Error) {

@@ -5,12 +5,17 @@ import jwt from "jsonwebtoken";
 import { AppDataSource } from "../config/databaseConfig.js";
 import { User } from "../entities/User.js";
 import type { RoleName } from "../entities/Role.js";
+import {
+  getNormalizedCognitoGroups,
+  readCognitoGroupsFromPayload,
+} from "../utils/cognitoGroups.js";
 
 type TokenPayload = {
   username?: string;
   sub?: string;
   email?: string;
   iss?: string;
+  "cognito:groups"?: string[] | string;
   [key: string]: unknown;
 };
 
@@ -19,6 +24,8 @@ export interface AuthenticatedRequestUser extends TokenPayload {
   cognitoId?: string | null;
   roles: RoleName[];
   email?: string;
+  cognitoGroups: string[];
+  normalizedGroups: string[];
 }
 
 declare module "express-serve-static-core" {
@@ -120,6 +127,8 @@ async function authenticateRequest(
   }
 
   const roles = user.roles?.map((role) => role.name) ?? [];
+  const cognitoGroups = readCognitoGroupsFromPayload(tokenData);
+  const normalizedGroups = getNormalizedCognitoGroups(tokenData);
 
   return {
     ...tokenData,
@@ -127,6 +136,8 @@ async function authenticateRequest(
     cognitoId: user.cognitoId,
     email: user.email,
     roles,
+    cognitoGroups,
+    normalizedGroups,
   };
 }
 
@@ -147,7 +158,11 @@ export const superAdminRequired: RequestHandler = async (req, res, next) => {
   try {
     const authenticatedUser = await authenticateRequest(req);
 
-    if (!authenticatedUser.roles.includes("SUPER_ADMIN")) {
+    const isSuperAdmin =
+      authenticatedUser.roles.includes("SUPER_ADMIN") ||
+      authenticatedUser.normalizedGroups.includes("SUPER_ADMIN");
+
+    if (!isSuperAdmin) {
       return res
         .status(403)
         .json({ error: "Super admin privileges are required" });
