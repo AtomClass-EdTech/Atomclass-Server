@@ -3,8 +3,7 @@ import { CognitoJwtVerifier } from "aws-jwt-verify";
 import jwt from "jsonwebtoken";
 
 import { AppDataSource } from "../config/databaseConfig.js";
-import { User } from "../entities/User.js";
-import type { RoleName } from "../entities/Role.js";
+import { User, UserRole } from "../entities/User.js";
 import {
   getNormalizedCognitoGroups,
   readCognitoGroupsFromPayload,
@@ -22,7 +21,7 @@ type TokenPayload = {
 export interface AuthenticatedRequestUser extends TokenPayload {
   id: string;
   cognitoId?: string | null;
-  roles: RoleName[];
+  role: UserRole;
   email?: string;
   cognitoGroups: string[];
   normalizedGroups: string[];
@@ -105,7 +104,6 @@ async function findUserForToken(tokenData: TokenPayload): Promise<User | null> {
   for (const where of lookupValues) {
     const user = await userRepository.findOne({
       where,
-      relations: ["roles"],
     });
     if (user) {
       return user;
@@ -126,7 +124,6 @@ async function authenticateRequest(
     throw new Error("User not found for provided token");
   }
 
-  const roles = user.roles?.map((role) => role.name) ?? [];
   const cognitoGroups = readCognitoGroupsFromPayload(tokenData);
   const normalizedGroups = getNormalizedCognitoGroups(tokenData);
 
@@ -135,7 +132,7 @@ async function authenticateRequest(
     id: user.id,
     cognitoId: user.cognitoId,
     email: user.email,
-    roles,
+    role: user.role,
     cognitoGroups,
     normalizedGroups,
   };
@@ -159,7 +156,7 @@ export const superAdminRequired: RequestHandler = async (req, res, next) => {
     const authenticatedUser = await authenticateRequest(req);
 
     const isSuperAdmin =
-      authenticatedUser.roles.includes("SUPER_ADMIN") ||
+      authenticatedUser.role === UserRole.SUPER_ADMIN ||
       authenticatedUser.normalizedGroups.includes("SUPER_ADMIN");
 
     if (!isSuperAdmin) {

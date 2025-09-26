@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, Index, CreateDateColumn, UpdateDateColumn, JoinColumn } from "typeorm";
 import { User } from "./User.js";
 import { Organization } from "./Organization.js";
-import type { Section } from "./Section.js";
+import type { Lesson } from "./Lesson.js";
 
+type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
 @Entity({ name: "courses" })
 export class Course {
@@ -22,7 +23,7 @@ export class Course {
   @Column({ type: "varchar", length: 10, default: "INR" })
   currency!: string;
 
-  @Column({ type: "integer", default: 0 }) 
+  @Column({ type: "integer", default: 0 })
   price!: number;
 
   @Column({ type: "varchar", length: 20, default: "DRAFT" })
@@ -39,8 +40,11 @@ export class Course {
   @JoinColumn({ name: "organization_id" })
   organization!: Organization | null;
 
-  @OneToMany("Section", (section: Section) => section.course, { cascade: true })
-  sections!: Section[];
+  @Column({ type: "jsonb", name: "content_outline", nullable: true })
+  contentOutline!: JsonValue | null;
+
+  @OneToMany("Lesson", (lesson: Lesson) => lesson.course, { cascade: true })
+  lessons!: Lesson[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

@@ -5,14 +5,9 @@ import { User } from "../entities/User.js";
 import { EnvironmentTypes } from "../utils/index.js";
 import { loadEnv } from "./loadEnv.js";
 import { Organization } from "../entities/Organization.js";
-import { Role } from "../entities/Role.js";
 import { Course } from "../entities/Course.js";
-import { Section } from "../entities/Section.js";
 import { Lesson } from "../entities/Lesson.js";
-import { VideoAsset } from "../entities/VideoAsset.js";
-import { Order } from "../entities/Order.js";
-import { Payment } from "../entities/Payment.js";
-import { Enrollment } from "../entities/Enrollment.js";
+import { Purchase } from "../entities/Purchase.js";
 
 loadEnv();
 
@@ -31,21 +26,21 @@ export const dbConfig: Record<
   development: {
     username: "postgres",
     password: "TotalProfit1!",
-    database: "atomclass",
-    host: "kundankishoredb.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
+    database: "atomclass-dev",
+    host: "atomclass-edtech.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
     port: 5432,
   },
   production: {
     username: "postgres",
     password: "TotalProfit1!",
     database: "atomclass",
-    host: "kundankishoredb.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
+    host: "atomclass-edtech.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
     port: 5432,
   },
 };
 
 const currentDbConfig =
-  dbConfig[(process.env.NODE_ENV! as EnvironmentTypes) || "development"];
+  dbConfig[(process.env.NODE_ENV! as EnvironmentTypes) || "production"];
 
 const { username, password, host, port, database } = currentDbConfig;
 const portNumber = typeof port === "string" ? parseInt(port, 10) : port;
@@ -76,7 +71,7 @@ export const AppDataSource = new DataSource({
   host,
   port: Number.isNaN(portNumber) ? 5432 : portNumber,
   database,
-  entities: [Organization, Role, User, Course, Section, Lesson, VideoAsset, Order, Payment, Enrollment],
+  entities: [Organization, User, Course, Lesson, Purchase],
   subscribers: subscribersGlobs,
   synchronize: true,
   logging: false,

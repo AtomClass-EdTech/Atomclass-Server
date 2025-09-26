@@ -4,14 +4,11 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  ManyToMany,
-  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
 } from "typeorm";
 import { Organization } from "./Organization.js";
-import { Role } from "./Role.js";
 
 export enum OtpType {
   EMAIL_VERIFICATION = "EMAIL_VERIFICATION",
@@ -21,6 +18,7 @@ export enum OtpType {
 export enum UserRole {
   USER = "USER",
   ADMIN = "ADMIN",
+  SUPER_ADMIN = "SUPER_ADMIN",
 }
 
 export interface OTPMetadata {
@@ -98,14 +96,6 @@ export class User {
   })
   @JoinColumn({ name: "organization_id" })
   organization!: Organization | null;
-
-  @ManyToMany(() => Role, { eager: true })
-  @JoinTable({
-    name: "user_roles",
-    joinColumn: { name: "user_id", referencedColumnName: "id" },
-    inverseJoinColumn: { name: "role_id", referencedColumnName: "id" },
-  })
-  roles!: Role[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
