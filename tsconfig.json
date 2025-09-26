@@ -21,7 +21,6 @@
     "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
     "skipLibCheck": true,
-    "jsx": "react",
     "sourceMap": true
   },
   "exclude": [
