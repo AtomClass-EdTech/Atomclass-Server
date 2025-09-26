@@ -1,13 +1,12 @@
-interface CognitoUserInterface {
-  id: string;
-  email_verified: boolean;
-  email: string;
-  isSuperAdmin: boolean;
-}
+import type { AuthenticatedRequestUser } from "../../middleware/authMiddleware.js";
 
-declare namespace Express {
-  interface Request {
-    user?: CognitoUserInterface;
-    rawBody?: Buffer;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthenticatedRequestUser;
+      rawBody?: Buffer;
+    }
   }
 }
+
+export {};

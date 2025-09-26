@@ -1,93 +1,80 @@
-# bb-backend-boilerplate
+# Atomclass Server
 
+An Express + TypeScript backend powering the Atomclass platform. The service integrates with PostgreSQL via TypeORM, AWS Cognito for authentication, and AWS S3/SES for storage and messaging.
 
+## Getting Started
 
-## Getting started
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+2. **Configure environment variables** (see [Environment](#environment))
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+4. Optional: run migrations once the database is reachable
+   ```bash
+   npm run migrate-up
+   ```
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Environment
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Create a `.env` (and optionally `.env.development`, `.env.production`) with the following keys. Secrets should never be committed.
 
-## Add your files
+```dotenv
+NODE_ENV=development
+PORT=3000
+PUBLIC_APP_URL=http://localhost:3000
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+DEV_DB_USERNAME=
+DEV_DB_PASSWORD=
+DEV_DB_NAME=
+DEV_DB_HOST=
+DEV_DB_PORT=5432
+DB_SSL=false
 
+AWS_REGION=
+AWS_COGNITO_CLIENT_ID=
+AWS_COGNITO_CLIENT_SECRET=
+AWS_COGNITO_USER_POOL_ID=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET_NAME=
+
+TYPEORM_SYNCHRONIZE=false
+TYPEORM_LOGGING=false
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/bulkbeings/bb-backend-boilerplate.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+For production deployments set the corresponding `DB_*` variables (without the `DEV_` prefix) and mark `DB_SSL=true`.
 
-- [ ] [Set up project integrations](https://gitlab.com/bulkbeings/bb-backend-boilerplate/-/settings/integrations)
+## Scripts
 
-## Collaborate with your team
+- `npm run dev` – start the server with `ts-node` and reload support
+- `npm run build` – compile TypeScript to the `dist` directory
+- `npm run start` – serve the compiled output
+- `npm run typecheck` – run `tsc` without emitting files
+- `npm run lint` / `npm run lint:fix` – static analysis with ESLint
+- `npm test` – type check and lint the project
+- `npm run format:write` / `npm run format:check` – Prettier formatting utilities
+- `npm run migrate-up` / `npm run migrate-down` – TypeORM migrations
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## Conventions
 
-## Test and Deploy
+- TypeScript is configured with strict settings; keep new modules strongly typed.
+- Use the shared helpers in `src/utils` for OTP, Cognito token parsing, etc. to avoid duplicating logic.
+- Prefer dependency injection via constructors or service functions to simplify testing.
+- New routes should mount under `src/routes` and include explicit authentication/authorization checks.
 
-Use the built-in continuous integration in GitLab.
+## Security Notes
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+- All credentials (database, AWS, Cognito) must be supplied via environment variables.
+- Keep `TYPEORM_SYNCHRONIZE=false` in production; rely on migrations for schema changes.
+- File uploads validate configuration at runtime and should be fronted by API-level validation of allowed MIME types.
+- Never expose password reset links or tokens in API responses.
 
-***
+## Troubleshooting
 
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- Ensure the database is reachable from your environment when initializing the `AppDataSource`.
+- When modifying entity definitions, generate and run migrations to keep production in sync.
+- Failed file uploads often indicate missing AWS credentials or bucket misconfiguration—check the environment variables first.

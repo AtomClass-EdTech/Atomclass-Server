@@ -24,23 +24,25 @@ export const dbConfig: Record<
   Record<(typeof dbConfigurationKeys)[number], any>
 > = {
   development: {
-    username: "postgres",
-    password: "TotalProfit1!",
-    database: "atomclass-dev",
-    host: "atomclass-edtech.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
+    username: process.env.DEV_DB_USERNAME,
+    password: process.env.DEV_DB_PASSWORD,
+    database: process.env.DEV_DB_NAME_DEVELOPMENT,
+    host: process.env.DEV_DB_HOST,
     port: 5432,
   },
   production: {
-    username: "postgres",
-    password: "TotalProfit1!",
-    database: "atomclass",
-    host: "atomclass-edtech.cpm0s28o0c5k.ap-south-1.rds.amazonaws.com",
+    username: process.env.DEV_DB_USERNAME,
+    password: process.env.DEV_DB_PASSWORD,
+    database: process.env.DEV_DB_NAME_PRODUCTION,
+    host: process.env.DEV_DB_HOST,
     port: 5432,
   },
 };
 
 const currentDbConfig =
   dbConfig[(process.env.NODE_ENV! as EnvironmentTypes) || "production"];
+
+  console.log("Current DB Config:", currentDbConfig);
 
 const { username, password, host, port, database } = currentDbConfig;
 const portNumber = typeof port === "string" ? parseInt(port, 10) : port;

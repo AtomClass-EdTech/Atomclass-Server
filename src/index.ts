@@ -69,14 +69,9 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
-app.use(cors(buildCorsOptions()));
-app.use((_req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
+const corsOptions = buildCorsOptions();
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));

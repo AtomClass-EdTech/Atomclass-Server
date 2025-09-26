@@ -25,7 +25,37 @@ export const cognitoIdentityServiceProvider =
     },
   });
 
-const clientId = process.env.AWS_COGNITO_CLIENT_ID || "";
+let cachedClientId: string | null = null;
+let cachedClientSecret: string | null = null;
+
+const resolveClientId = (): string => {
+  if (cachedClientId) {
+    return cachedClientId;
+  }
+
+  const clientId = process.env.AWS_COGNITO_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("AWS_COGNITO_CLIENT_ID is not configured");
+  }
+
+  cachedClientId = clientId;
+  return cachedClientId;
+};
+
+const resolveClientSecret = (): string => {
+  if (cachedClientSecret) {
+    return cachedClientSecret;
+  }
+
+  const clientSecret = process.env.AWS_COGNITO_CLIENT_SECRET;
+  if (!clientSecret) {
+    throw new Error("AWS_COGNITO_CLIENT_SECRET is not configured");
+  }
+
+  cachedClientSecret = clientSecret;
+  return cachedClientSecret;
+};
+
 export const userPoolId = process.env.AWS_COGNITO_USER_POOL_ID || "";
 
 export const authService = {
@@ -265,8 +295,8 @@ export const authService = {
     authParams: Record<string, string>
   ): Promise<AuthenticationResultType> => {
     try {
-      const clientSecret =
-        "7o77bdr6n8kglesd1ailmfa4raphdlpd4rh6nbjj8j31o5g4u3f";
+      const clientId = resolveClientId();
+      const clientSecret = resolveClientSecret();
 
       authParams.SECRET_HASH = authService.generateSecretHash(
         authParams.USERNAME,

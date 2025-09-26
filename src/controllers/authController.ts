@@ -163,11 +163,9 @@ const forgotPassword = async (req: Request, res: Response) => {
       });
     }
 
-    // res
-    //   .status(200)
-    //   .json({ message: "Password reset process initiated successfully." });
-
-    res.status(200).json({ resetLink: resetLink });
+    res.status(200).json({
+      message: "Password reset instructions have been sent if the email exists.",
+    });
   } catch (error) {
     console.error("Error during forgot password request:", error);
     if (error instanceof Error) {
@@ -181,18 +179,21 @@ const forgotPassword = async (req: Request, res: Response) => {
 const resetPassword = async (req: Request, res: Response) => {
   const { token, password } = req.body;
   try {
-    if (verifyToken(token)) {
-      const decodedToken = decodeTokenPayload(token);
-      const userId = decodedToken!.userId;
-
-      await authService.resetPassword(userId, password);
-      res.json({ message: "Password reset successful" });
-    } else {
-      res.status(500).json({ message: "Error verifying token" });
-      throw new Error("Error verifying token");
+    if (!token || !password) {
+      return res.status(400).json({ error: "Token and password are required" });
     }
-  } catch (err) {
-    res.status(400).json({ error: err });
+
+    const decodedToken = verifyToken(token);
+
+    if (!decodedToken?.userId) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+
+    await authService.resetPassword(decodedToken.userId, password);
+    res.json({ message: "Password reset successful" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to reset password";
+    res.status(400).json({ error: message });
   }
 };
 

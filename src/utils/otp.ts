@@ -1,8 +1,9 @@
+import crypto from "crypto";
 import { OtpType, OTPMetadata } from "../entities/User.js";
 
 export class OTPService {
   static generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
   }
 
   static createOTPData(
