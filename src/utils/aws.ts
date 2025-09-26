@@ -34,18 +34,18 @@ export const AWSUtils = {
 
       await ses.send(command);
       console.log(
-        `✅ Template '${templateConfig.TemplateName}' created successfully`
+        `Template '${templateConfig.TemplateName}' created successfully`
       );
       return true;
     } catch (error: any) {
       if (error.name === "AlreadyExistsException") {
         console.log(
-          `⚠️ Template '${templateConfig.TemplateName}' already exists`
+          `Template '${templateConfig.TemplateName}' already exists`
         );
         return true;
       }
       console.error(
-        `❌ Error creating template '${templateConfig.TemplateName}':`,
+        `Error creating template '${templateConfig.TemplateName}':`,
         error.message
       );
       return false;
@@ -62,12 +62,12 @@ export const AWSUtils = {
 
       await ses.send(command);
       console.log(
-        `✅ Template '${templateConfig.TemplateName}' updated successfully`
+        `Template '${templateConfig.TemplateName}' updated successfully`
       );
       return true;
     } catch (error: any) {
       console.error(
-        `❌ Error updating template '${templateConfig.TemplateName}':`,
+        `Error updating template '${templateConfig.TemplateName}':`,
         error.message
       );
       return false;
@@ -75,7 +75,7 @@ export const AWSUtils = {
   },
 
   initializeTemplates: async () => {
-    console.log("🚀 Initializing email templates...");
+    console.log("Initializing email templates...");
 
     const templates = Object.values(EMAIL_TEMPLATES);
     const results = [];
@@ -87,7 +87,7 @@ export const AWSUtils = {
 
     const successCount = results.filter((r) => r.success).length;
     console.log(
-      `✅ Templates initialized: ${successCount}/${results.length} successful`
+      `Templates initialized: ${successCount}/${results.length} successful`
     );
 
     return results;
@@ -99,12 +99,12 @@ export const AWSUtils = {
       const response = await ses.send(command);
 
       console.log(
-        "📋 Existing templates:",
+        "Existing templates:",
         response.TemplatesMetadata?.map((t) => t.Name)
       );
       return response.TemplatesMetadata || [];
     } catch (error: any) {
-      console.error("❌ Error listing templates:", error.message);
+      console.error("Error listing templates:", error.message);
       return [];
     }
   },
@@ -116,11 +116,11 @@ export const AWSUtils = {
       });
 
       await ses.send(command);
-      console.log(`✅ Template '${templateName}' deleted successfully`);
+      console.log(`Template '${templateName}' deleted successfully`);
       return true;
     } catch (error: any) {
       console.error(
-        `❌ Error deleting template '${templateName}':`,
+        `Error deleting template '${templateName}':`,
         error.message
       );
       return false;
@@ -158,11 +158,11 @@ export const AWSUtils = {
       const response = await ses.send(command);
 
       console.log(
-        `✅ Email sent successfully using template '${templateName}'. MessageId: ${response.MessageId}`
+        `Email sent successfully using template '${templateName}'. MessageId: ${response.MessageId}`
       );
       return response.MessageId!;
     } catch (error: any) {
-      console.error("❌ Error sending email:", error.message);
+      console.error("Error sending email:", error.message);
 
       if (error.message.includes("Email address not verified")) {
         throw new Error(
@@ -189,5 +189,5 @@ export const setupEmailTemplates = async () => {
   await AWSUtils.initializeTemplates();
   await AWSUtils.listTemplates();
 
-  console.log("✅ Email template setup complete!");
+  console.log("Email template setup complete!");
 };
