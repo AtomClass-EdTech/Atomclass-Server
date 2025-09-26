@@ -6,7 +6,7 @@ const router = Router();
 
 router.post("/login", authController.login);
 router.post("/signup", authController.signUp);
-router.post("/confirmEmail", authController.confirmEmail);
+router.post("/confirm-email", authController.confirmEmail);
 router.post("/verify-otp", authController.confirmEmail);
 router.post("/resend-otp", authController.resendVerificationOtp);
 router.post("/refresh-tokens", async (req, res, next) => {
@@ -29,6 +29,5 @@ router.post("/refresh-tokens", async (req, res, next) => {
 });
 router.post("/reset-password", authController.resetPassword);
 router.post("/forgot-password", authController.forgotPassword);
-router.post("/forgotPassword", authController.forgotPassword);
 
 export { router as authRouter };
