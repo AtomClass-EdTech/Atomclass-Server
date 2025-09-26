@@ -1,3 +1,4 @@
 import * as databaseConfig from "./databaseConfig.js";
+import { loadEnv } from './loadEnv.js';
 
-export { databaseConfig };
+export { databaseConfig, loadEnv };

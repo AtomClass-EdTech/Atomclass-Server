@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import Routers from "./routes/index.js";
 import { errorHandler } from "./helpers/errorHandler.js";
 import { databaseConfig } from "./config/index.js";
-import { loadEnv } from "./config/loadEnv.js";
+import { loadEnv } from "./config/index.js";
 
 loadEnv();
 
