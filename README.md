@@ -1,6 +1,6 @@
 # Atomclass Server
 
-An Express + TypeScript backend powering the Atomclass platform. The service integrates with PostgreSQL via TypeORM, AWS Cognito for authentication, and AWS S3/SES for storage and messaging.
+An Express + TypeScript backend powering the Atomclass platform. The service integrates with PostgreSQL via TypeORM, AWS Cognito for authentication
 
 ## Getting Started
 
