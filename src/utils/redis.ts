@@ -85,3 +85,59 @@ const resolveRedisConfig = (): RedisOptions => {
 };
 
 export const redis = new Redis(resolveRedisConfig());
+
+const coerceToString = (value: unknown): string | null => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Buffer.isBuffer(value)) {
+    return value.toString("utf8");
+  }
+
+  if (Array.isArray(value)) {
+    return coerceToString(value[0]);
+  }
+
+  return String(value);
+};
+
+const JSON_ROOT_PATH = "$";
+
+export const redisJson = {
+  get: async <T>(key: string): Promise<T | null> => {
+    const raw = await redis.call("JSON.GET", key);
+    const serialized = coerceToString(raw);
+
+    if (!serialized) {
+      return null;
+    }
+
+    return JSON.parse(serialized) as T;
+  },
+
+  set: async <T>(key: string, value: T, ttlSeconds?: number): Promise<void> => {
+    const serialized = JSON.stringify(value);
+    await redis.call("JSON.SET", key, JSON_ROOT_PATH, serialized);
+
+    if (typeof ttlSeconds === "number" && !Number.isNaN(ttlSeconds)) {
+      await redis.expire(key, ttlSeconds);
+    }
+  },
+
+  del: async (...keys: string[]): Promise<void> => {
+    if (keys.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      keys.map(async (key) => {
+        await redis.call("JSON.DEL", key);
+      }),
+    );
+  },
+};
