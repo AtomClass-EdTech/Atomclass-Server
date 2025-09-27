@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { AppDataSource } from "../config/databaseConfig.js";
 import { UserDevice } from "../entities/UserDevice.js";
-import { DeviceLimitExceededError } from "../errors/DeviceLimitExceededError.js";
+import { DeviceLimitExceededError } from "../errors/device-limit-exceeded.js";
 import type { User } from "../entities/User.js";
 import { Repository } from "typeorm";
 

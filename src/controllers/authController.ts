@@ -20,7 +20,7 @@ import {
   deriveDeviceId,
   userDeviceService,
 } from "../services/userDeviceService.js";
-import { DeviceLimitExceededError } from "../errors/DeviceLimitExceededError.js";
+import { DeviceLimitExceededError } from "../errors/device-limit-exceeded.js";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -127,6 +127,10 @@ const login = async (req: Request, res: Response) => {
         });
       } catch (deviceError) {
         if (deviceError instanceof DeviceLimitExceededError) {
+          await userRepository.update(userInfo.id,{
+            status:"SUSPENDED"
+          })
+          
           res
             .status(403)
             .json({ error: deviceError.message, code: "DEVICE_LIMIT_REACHED" });
