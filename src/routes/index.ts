@@ -10,7 +10,7 @@ import { fileRouter } from "./fileRoutes.js";
 
 const Routers = express.Router();
 
-//common routes
+// routes
 Routers.use("/auth", authRouter);
 Routers.use("/health", healthRouter);
 Routers.use("/file", [loginRequired], fileRouter);

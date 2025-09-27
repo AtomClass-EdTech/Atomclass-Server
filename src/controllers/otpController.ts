@@ -104,7 +104,6 @@ const resendOTP = async (req: Request, res: Response) => {
       });
     }
 
-    // Check rate limiting
     if (
       user.otp &&
       !OTPService.canResendOTP(user.otp.lastSentAt)
@@ -114,14 +113,12 @@ const resendOTP = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate new OTP
     const otpData = OTPService.createOTPData(OtpType.EMAIL_VERIFICATION);
     if (otpData) {
       user.otp = otpData;
       await userRepository.save(user);
     }
 
-    // Send OTP
     const emailSent = await EmailService.sendOTP(
       user.email,
       otpData.code!,

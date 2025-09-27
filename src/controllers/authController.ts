@@ -7,19 +7,19 @@ import {
   verifyToken,
 } from "../utils/bcryptUtils.js";
 import { AppDataSource } from "../config/databaseConfig.js";
-import { OtpType, User, UserRole } from "../entities/User.js";
+import { OtpType, User } from "../entities/User.js";
 import { OTPService } from "../utils/otp.js";
 import { EmailService } from "../utils/emailHelper.js";
 import { AuthRequest } from "../types/auth.req.types.js";
 import {
   getNormalizedCognitoGroups,
   readCognitoGroupsFromPayload,
-} from "../utils/cognitoGroups.js";
+} from "../utils/cognitoGroups.js"; 
 
 const userRepository = AppDataSource.getRepository(User);
 
 const signUp = async (req: Request, res: Response) => {
-  const { email, password, fullName } = req.body;
+  const { email, password, fullName, role } = req.body;
 
   try {
     if (!email || !password || !fullName) {
@@ -30,14 +30,15 @@ const signUp = async (req: Request, res: Response) => {
 
     const cognitoUserId = await authService.createUserInCognito(
       email,
-      password
+      password,
+      role
     );
 
     const userData: Partial<User> = {
       fullName: fullName.trim(),
       email: email.toLowerCase().trim(),
       cognitoId: cognitoUserId,
-      role: UserRole.USER,
+      role,
       isVerified: false,
       isActive: true,
       loginCount: 0,
@@ -218,7 +219,6 @@ const getUserById = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Create a copy without the OTP field
     const { otp, ...userWithoutOtp } = userInfo;
     res.json({ user: userWithoutOtp });
   } catch (error) {

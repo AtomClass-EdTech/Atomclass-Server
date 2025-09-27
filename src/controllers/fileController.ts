@@ -17,7 +17,6 @@ export interface UploadRequest extends Request {
   file: Express.Multer.File;
 }
 
-// Upload middleware for S3
 let cachedS3Client: S3Client | null = null;
 
 const getS3Client = (): S3Client => {
@@ -48,7 +47,7 @@ const getS3Client = (): S3Client => {
 const uploadS3 = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB file size limit
+    fileSize: 15 * 1024 * 1024, 
   },
 }).array("file");
 
