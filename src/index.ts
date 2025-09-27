@@ -7,8 +7,47 @@ import Routers from "./routes/index.js";
 import { errorHandler } from "./helpers/errorHandler.js";
 import { databaseConfig } from "./config/index.js";
 import { loadEnv } from "./config/index.js";
+import { redis } from "./utils/redis.js";
 
 loadEnv();
+
+let redisAuthErrorReported = false;
+
+redis.on("error", (error) => {
+  if (
+    error instanceof Error &&
+    error.message.includes("NOAUTH") &&
+    !redisAuthErrorReported
+  ) {
+    redisAuthErrorReported = true;
+    console.error(
+      "Redis authentication failed. Ensure REDIS_HOST_URL includes credentials or set REDIS_PASSWORD/REDIS_USERNAME env vars.",
+    );
+    return;
+  }
+
+  console.error("Redis connection error:", error);
+});
+
+redis.on("ready", () => {
+  console.log("Redis connection ready");
+
+  void redis.ping().catch((error) => {
+    if (
+      error instanceof Error &&
+      error.message.includes("NOAUTH") &&
+      !redisAuthErrorReported
+    ) {
+      redisAuthErrorReported = true;
+      console.error(
+        "Redis authentication failed. Ensure REDIS_HOST_URL includes credentials or set REDIS_PASSWORD/REDIS_USERNAME env vars.",
+      );
+      return;
+    }
+
+    console.error("Redis ping failed:", error);
+  });
+});
 
 const PORT = Number(process.env.PORT) || 8000;
 const __filename = fileURLToPath(import.meta.url);
