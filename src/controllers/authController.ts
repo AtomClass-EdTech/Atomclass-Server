@@ -111,6 +111,11 @@ const login = async (req: Request, res: Response) => {
       return;
     }
 
+    if (userInfo?.status === "SUSPENDED") {
+      res.status(403).json({ error: "Your account is suspended. Please contact support." });
+      return;
+    }
+
     const userAgent = req.get("user-agent") ?? null;
     const ipAddress = extractClientIp(req);
     const resolvedDeviceId = deriveDeviceId({
