@@ -84,6 +84,17 @@ export class User {
   @Column({ type: "timestamp", name: "last_login", nullable: true })
   lastLogin!: Date | null;
 
+  @Column({ type: "varchar", length: 45, name: "last_login_ip", nullable: true })
+  lastLoginIp!: string | null;
+
+  @Column({
+    type: "varchar",
+    length: 512,
+    name: "last_login_user_agent",
+    nullable: true,
+  })
+  lastLoginUserAgent!: string | null;
+
   @Column({ type: "jsonb", nullable: true })
   otp?: OTPMetadata | null;
 

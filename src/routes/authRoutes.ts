@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authController } from "../controllers/authController.js";
 import { authService } from "../services/authService.js";
+import { loginRequired } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.post("/refresh-tokens", async (req, res, next) => {
 });
 router.post("/reset-password", authController.resetPassword);
 router.post("/forgot-password", authController.forgotPassword);
+router.post("/logout", loginRequired, authController.logout);
 
 export { router as authRouter };

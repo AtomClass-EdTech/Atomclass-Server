@@ -49,7 +49,6 @@ export const userController = {
 
       const { users, count } = await userService.getUsers();
       const payload = { users, count };
-
       void writeCache(USER_LIST_CACHE_KEY, payload);
 
       res.json({ payload });

@@ -2,6 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { DataSource } from "typeorm";
 import { User } from "../entities/User.js";
+import { UserDevice } from "../entities/UserDevice.js";
 import { EnvironmentTypes } from "../utils/index.js";
 import { loadEnv } from "./loadEnv.js";
 import { Course } from "../entities/Course.js";
@@ -71,7 +72,7 @@ export const AppDataSource = new DataSource({
   host,
   port: Number.isNaN(portNumber) ? 5432 : portNumber,
   database,
-  entities: [User, Course, Lesson, Purchase],
+  entities: [User, UserDevice, Course, Lesson, Purchase],
   subscribers: subscribersGlobs,
   synchronize: true,
   logging: false,

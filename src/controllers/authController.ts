@@ -8,6 +8,7 @@ import {
 } from "../utils/bcryptUtils.js";
 import { AppDataSource } from "../config/databaseConfig.js";
 import { OtpType, User } from "../entities/User.js";
+import type { UserDevice } from "../entities/UserDevice.js";
 import { OTPService } from "../utils/otp.js";
 import { EmailService } from "../utils/emailHelper.js";
 import { AuthRequest } from "../types/auth.req.types.js";
@@ -15,8 +16,27 @@ import {
   getNormalizedCognitoGroups,
   readCognitoGroupsFromPayload,
 } from "../utils/cognitoGroups.js"; 
+import {
+  deriveDeviceId,
+  userDeviceService,
+} from "../services/userDeviceService.js";
+import { DeviceLimitExceededError } from "../errors/DeviceLimitExceededError.js";
 
 const userRepository = AppDataSource.getRepository(User);
+
+const extractClientIp = (req: Request): string | null => {
+  const forwarded = req.headers["x-forwarded-for"];
+
+  if (typeof forwarded === "string" && forwarded.length > 0) {
+    return forwarded.split(",")[0]?.trim() ?? null;
+  }
+
+  if (Array.isArray(forwarded) && forwarded.length > 0) {
+    return forwarded[0]?.trim() ?? null;
+  }
+
+  return req.socket?.remoteAddress ?? req.ip ?? null;
+};
 
 const signUp = async (req: Request, res: Response) => {
   const { email, password, fullName, role } = req.body;
@@ -79,18 +99,65 @@ const signUp = async (req: Request, res: Response) => {
 
 const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  const deviceIdFromBody = typeof req.body.deviceId === "string" ? req.body.deviceId : undefined;
+  const deviceNameFromBody =
+    typeof req.body.deviceName === "string" ? req.body.deviceName.trim() : undefined;
+
   try {
     const userInfo = await userService.getUserByEmail(email);
+
     if (userInfo?.isVerified === false) {
       res.status(403).json({ error: "Please verify your email." });
       return;
     }
+
+    const userAgent = req.get("user-agent") ?? null;
+    const ipAddress = extractClientIp(req);
+    const resolvedDeviceId = deriveDeviceId({
+      providedDeviceId: deviceIdFromBody,
+      userAgent,
+      ipAddress,
+    });
+
+    if (userInfo?.id) {
+      try {
+        await userDeviceService.ensureDeviceCanLogin({
+          userId: userInfo.id,
+          deviceId: resolvedDeviceId,
+        });
+      } catch (deviceError) {
+        if (deviceError instanceof DeviceLimitExceededError) {
+          res
+            .status(403)
+            .json({ error: deviceError.message, code: "DEVICE_LIMIT_REACHED" });
+          return;
+        }
+
+        throw deviceError;
+      }
+    }
+
     const tokens = await authService.loginUser(email, password);
+
+    let deviceRecord: UserDevice | null = null;
+    let activeDeviceCount: number | undefined;
 
     if (userInfo) {
       userInfo.lastLogin = new Date();
       userInfo.loginCount += 1;
+      userInfo.lastLoginIp = ipAddress;
+      userInfo.lastLoginUserAgent = userAgent;
       await userRepository.save(userInfo);
+
+      deviceRecord = await userDeviceService.recordSuccessfulLogin({
+        userId: userInfo.id,
+        deviceId: resolvedDeviceId,
+        deviceName: deviceNameFromBody,
+        userAgent,
+        ipAddress,
+      });
+
+      activeDeviceCount = await userDeviceService.getActiveDeviceCount(userInfo.id);
     }
 
     const decodedToken = tokens.AccessToken
@@ -105,6 +172,7 @@ const login = async (req: Request, res: Response) => {
     const normalizedGroups = decodedPayload
       ? getNormalizedCognitoGroups(decodedPayload)
       : [];
+
     res.json({
       tokens,
       user: {
@@ -116,6 +184,14 @@ const login = async (req: Request, res: Response) => {
         cognitoGroups,
         normalizedGroups,
       },
+      device: deviceRecord
+        ? {
+            id: deviceRecord.deviceId,
+            name: deviceRecord.deviceName,
+            lastSeen: deviceRecord.lastSeen,
+          }
+        : undefined,
+      activeDeviceCount,
       username: decodedToken?.username,
       cognitoGroups,
       normalizedGroups,
@@ -212,6 +288,50 @@ const resetPassword = async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to reset password";
     res.status(400).json({ error: message });
+  }
+};
+
+const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    const authenticatedUser = req.user;
+
+    if (!authenticatedUser?.id) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const deviceIdFromBody =
+      typeof req.body?.deviceId === "string" ? req.body.deviceId.trim() : undefined;
+    const userAgent = req.get("user-agent") ?? null;
+    const ipAddress = extractClientIp(req);
+    const resolvedDeviceId = deriveDeviceId({
+      providedDeviceId: deviceIdFromBody,
+      userAgent,
+      ipAddress,
+    });
+
+    const deviceRecord = await userDeviceService.recordLogout({
+      userId: authenticatedUser.id,
+      deviceId: resolvedDeviceId,
+    });
+
+    const activeDeviceCount = await userDeviceService.getActiveDeviceCount(
+      authenticatedUser.id,
+    );
+
+    res.json({
+      success: true,
+      device: deviceRecord
+        ? {
+            id: deviceRecord.deviceId,
+            lastSeen: deviceRecord.lastSeen,
+          }
+        : null,
+      activeDeviceCount,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to logout";
+    res.status(500).json({ error: message });
   }
 };
 
@@ -322,6 +442,7 @@ export const authController = {
   login,
   forgotPassword,
   resetPassword,
+  logout,
   getUserById,
   confirmEmail,
   resendVerificationOtp,
