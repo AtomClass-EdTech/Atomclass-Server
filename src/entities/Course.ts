@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, Index, CreateDateColumn, UpdateDateColumn, JoinColumn } from "typeorm";
 import { User } from "./User.js";
-import { Organization } from "./Organization.js";
 import type { Lesson } from "./Lesson.js";
 
 type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
@@ -35,10 +34,6 @@ export class Course {
   @ManyToOne(() => User, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "teacher_id" })
   teacher!: User | null;
-
-  @ManyToOne(() => Organization, (o) => o.courses, { onDelete: "SET NULL", nullable: true })
-  @JoinColumn({ name: "organization_id" })
-  organization!: Organization | null;
 
   @Column({ type: "jsonb", name: "content_outline", nullable: true })
   contentOutline!: JsonValue | null;

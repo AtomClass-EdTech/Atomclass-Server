@@ -2,13 +2,10 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
 } from "typeorm";
-import { Organization } from "./Organization.js";
 
 export enum OtpType {
   EMAIL_VERIFICATION = "EMAIL_VERIFICATION",
@@ -89,13 +86,6 @@ export class User {
 
   @Column({ type: "jsonb", nullable: true })
   otp?: OTPMetadata | null;
-
-  @ManyToOne(() => Organization, (o) => o.users, {
-    nullable: true,
-    onDelete: "SET NULL",
-  })
-  @JoinColumn({ name: "organization_id" })
-  organization!: Organization | null;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

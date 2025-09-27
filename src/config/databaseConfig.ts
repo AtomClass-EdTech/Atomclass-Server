@@ -4,7 +4,6 @@ import { DataSource } from "typeorm";
 import { User } from "../entities/User.js";
 import { EnvironmentTypes } from "../utils/index.js";
 import { loadEnv } from "./loadEnv.js";
-import { Organization } from "../entities/Organization.js";
 import { Course } from "../entities/Course.js";
 import { Lesson } from "../entities/Lesson.js";
 import { Purchase } from "../entities/Purchase.js";
@@ -71,7 +70,7 @@ export const AppDataSource = new DataSource({
   host,
   port: Number.isNaN(portNumber) ? 5432 : portNumber,
   database,
-  entities: [Organization, User, Course, Lesson, Purchase],
+  entities: [User, Course, Lesson, Purchase],
   subscribers: subscribersGlobs,
   synchronize: true,
   logging: false,
