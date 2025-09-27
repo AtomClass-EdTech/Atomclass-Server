@@ -83,7 +83,6 @@ app.use(
   }),
 );
 
-
 app.use('/api/v1', Routers);
 app.use(errorHandler);
 

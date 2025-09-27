@@ -31,7 +31,7 @@ const signUp = async (req: Request, res: Response) => {
     const cognitoUserId = await authService.createUserInCognito(
       email,
       password,
-      role
+      role === "SUPER_ADMIN" ? "Super-Admin":"User"
     );
 
     const userData: Partial<User> = {

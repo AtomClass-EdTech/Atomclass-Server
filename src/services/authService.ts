@@ -101,7 +101,7 @@ createUserInCognito: async (email: string, password: string, role: string) => {
       UserAttributes: [
         { Name: "email", Value: email.toLowerCase() },
         { Name: "preferred_username", Value: userId },
-        { Name: "email_verified", Value: "true" }, 
+        { Name: "email_verified", Value: "false" }, 
       ],
     };
 
