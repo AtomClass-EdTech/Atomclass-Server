@@ -111,7 +111,6 @@ const login = async (req: Request, res: Response) => {
       return;
     }
 
-    console.log("userInfo?.status", userInfo?.status)
     if (userInfo?.status === "SUSPENDED") {
       res.status(403).json({ error: "Your account has been suspended. Please contact support." });
       return;
