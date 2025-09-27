@@ -24,7 +24,6 @@ const resolveJwtSecret = (): string => {
       "JWT secret is not configured. Please set JWT_SECRET (or AUTH_JWT_SECRET/AUTH_TOKEN_SECRET).",
     );
   }
-
   cachedJwtSecret = secret;
   return cachedJwtSecret;
 };

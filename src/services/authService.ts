@@ -84,67 +84,71 @@ export const authService = {
       return null;
     }
   },
-createUserInCognito: async (email: string, password: string, role: string) => {
-  const userId = uuidv4();
+  createUserInCognito: async (
+    email: string,
+    password: string,
+    role: string
+  ) => {
+    const userId = uuidv4();
 
-  try {
-    const existingUser = await authService.checkUserExistsByEmail(email);
-    if (existingUser) {
-      throw new Error(`User with email ${email} already exists`);
-    }
+    try {
+      const existingUser = await authService.checkUserExistsByEmail(email);
+      if (existingUser) {
+        throw new Error(`User with email ${email} already exists`);
+      }
 
-    const params = {
-      UserPoolId: userPoolId,
-      Username: userId,
-      TemporaryPassword: password,
-      MessageAction: MessageActionType.SUPPRESS,
-      UserAttributes: [
-        { Name: "email", Value: email.toLowerCase() },
-        { Name: "preferred_username", Value: userId },
-        { Name: "email_verified", Value: "false" }, 
-      ],
-    };
-
-    await cognitoIdentityServiceProvider.adminCreateUser(params);
-    
-    await cognitoIdentityServiceProvider.adminSetUserPassword({
-      UserPoolId: userPoolId,
-      Username: userId,
-      Password: password,
-      Permanent: true,
-    });
-
-    if (role) {
-      await cognitoIdentityServiceProvider.adminAddUserToGroup({
+      const params = {
         UserPoolId: userPoolId,
         Username: userId,
-        GroupName: role,
+        TemporaryPassword: password,
+        MessageAction: MessageActionType.SUPPRESS,
+        UserAttributes: [
+          { Name: "email", Value: email.toLowerCase() },
+          { Name: "preferred_username", Value: userId },
+          { Name: "email_verified", Value: "false" },
+        ],
+      };
+
+      await cognitoIdentityServiceProvider.adminCreateUser(params);
+
+      await cognitoIdentityServiceProvider.adminSetUserPassword({
+        UserPoolId: userPoolId,
+        Username: userId,
+        Password: password,
+        Permanent: true,
       });
-    }
 
-    return userId;
-  } catch (error: any) {
-    console.error("Error creating user in cognito:", error);
+      if (role) {
+        await cognitoIdentityServiceProvider.adminAddUserToGroup({
+          UserPoolId: userPoolId,
+          Username: userId,
+          GroupName: role,
+        });
+      }
 
-    if (error.code === "UsernameExistsException") {
-      throw new Error(`User with email ${email} already exists`);
-    }
-    if (error.code === "InvalidPasswordException") {
-      throw new Error("Password does not meet requirements");
-    }
-    if (error.code === "InvalidParameterException") {
-      throw new Error("Invalid email format");
-    }
-    if (error.code === "TooManyRequestsException") {
-      throw new Error("Too many requests. Please try again later");
-    }
-    if (error.code === "ResourceNotFoundException") {
-      throw new Error(`Role/Group '${role}' does not exist`);
-    }
+      return userId;
+    } catch (error: any) {
+      console.error("Error creating user in cognito:", error);
 
-    throw error;
-  }
-},
+      if (error.code === "UsernameExistsException") {
+        throw new Error(`User with email ${email} already exists`);
+      }
+      if (error.code === "InvalidPasswordException") {
+        throw new Error("Password does not meet requirements");
+      }
+      if (error.code === "InvalidParameterException") {
+        throw new Error("Invalid email format");
+      }
+      if (error.code === "TooManyRequestsException") {
+        throw new Error("Too many requests. Please try again later");
+      }
+      if (error.code === "ResourceNotFoundException") {
+        throw new Error(`Role/Group '${role}' does not exist`);
+      }
+
+      throw error;
+    }
+  },
 
   createGoogleUserInCognito: async (email: string) => {
     const userId = uuidv4();
@@ -511,19 +515,37 @@ createUserInCognito: async (email: string, password: string, role: string) => {
         else username = userData.email;
       }
 
+      // Update email_verified attribute in Cognito
       await cognitoIdentityServiceProvider.adminUpdateUserAttributes({
         UserPoolId: userPoolId,
         Username: username,
         UserAttributes: [{ Name: "email_verified", Value: "true" }],
       });
 
+      // Check user status before attempting to confirm
       try {
-        await cognitoIdentityServiceProvider.adminConfirmSignUp({
+        const userDetails = await cognitoIdentityServiceProvider.adminGetUser({
           UserPoolId: userPoolId,
           Username: username,
         });
+
+        // Only attempt to confirm if user is not already confirmed
+        if (userDetails.UserStatus !== "CONFIRMED") {
+          await cognitoIdentityServiceProvider.adminConfirmSignUp({
+            UserPoolId: userPoolId,
+            Username: username,
+          });
+        } else {
+          console.log(`User ${username} is already confirmed in Cognito`);
+        }
       } catch (err: any) {
-        if (err.code !== "NotAuthorizedException") {
+        if (
+          err.code === "NotAuthorizedException" &&
+          err.message?.includes("Current status is CONFIRMED")
+        ) {
+          // User is already confirmed, which is fine
+          console.log(`User ${username} is already confirmed in Cognito`);
+        } else if (err.code !== "NotAuthorizedException") {
           console.error(
             "Error confirming user during email verification:",
             err
