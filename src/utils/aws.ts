@@ -10,6 +10,9 @@ import {
 } from "@aws-sdk/client-ses";
 import { EMAIL_TEMPLATES } from "../constants/emailTemplates.js";
 
+type TemplateKey = keyof typeof EMAIL_TEMPLATES;
+type EmailTemplateConfig = (typeof EMAIL_TEMPLATES)[TemplateKey];
+
 const ses = new SESClient({
   region: process.env.AWS_REGION,
   credentials: {
@@ -24,9 +27,7 @@ const validateEmail = (email: string): boolean => {
 };
 
 export const AWSUtils = {
-  createTemplate: async (
-    templateConfig: any
-  ) => {
+  createTemplate: async (templateConfig: EmailTemplateConfig) => {
     try {
       const command = new CreateTemplateCommand({
         Template: templateConfig,
@@ -52,9 +53,7 @@ export const AWSUtils = {
     }
   },
 
-  updateTemplate: async (
-    templateConfig: typeof EMAIL_TEMPLATES.EMAIL_VERIFICATION_OTP
-  ) => {
+  updateTemplate: async (templateConfig: EmailTemplateConfig) => {
     try {
       const command = new UpdateTemplateCommand({
         Template: templateConfig,
@@ -185,7 +184,7 @@ export const AWSUtils = {
 };
 
 export const setupEmailTemplates = async () => {
-  console.log("🔧 Setting up email templates for TheSchoolOfOptions...");
+  console.log("🔧 Setting up email templates for AtomClass...");
   await AWSUtils.initializeTemplates();
   await AWSUtils.listTemplates();
 

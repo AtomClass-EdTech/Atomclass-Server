@@ -119,11 +119,10 @@ const resendOTP = async (req: Request, res: Response) => {
       await userRepository.save(user);
     }
 
-    const emailSent = await EmailService.sendOTP(
+    const emailSent = await EmailService.sendEmailVerification(
       user.email,
       otpData.code!,
-      user.fullName ?? user.email,
-      "email_verification"
+      user.fullName ?? user.email
     );
 
     if (!emailSent.success) {

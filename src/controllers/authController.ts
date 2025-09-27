@@ -50,11 +50,10 @@ const signUp = async (req: Request, res: Response) => {
     user.otp = { ...otpData, type: OtpType.EMAIL_VERIFICATION };
     await userRepository.save(user);
 
-    const emailSent = await EmailService.sendOTP(
+    const emailSent = await EmailService.sendEmailVerification(
       user.email,
       otpData.code!,
-      user.fullName ?? user.email,
-      "email_verification"
+      user.fullName ?? user.email
     );
 
     if (!emailSent.success) {
@@ -151,11 +150,12 @@ const forgotPassword = async (req: Request, res: Response) => {
 
     const resetLink = `${process.env.PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    const emailSent = await EmailService.sendOTP(
+    const emailSent = await EmailService.sendPasswordResetRequest(
       user.email,
-      resetLink,
       user.fullName ?? user.email,
-      "password_reset"
+      resetLink,
+      resetToken,
+      60
     );
 
     if (!emailSent.success) {
@@ -191,6 +191,23 @@ const resetPassword = async (req: Request, res: Response) => {
     }
 
     await authService.resetPassword(decodedToken.userId, password);
+
+    const userRecord = await userRepository.findOne({
+      where: { email: decodedToken.email.toLowerCase() },
+    });
+
+    const resetSuccessEmail = await EmailService.sendPasswordResetSuccess(
+      decodedToken.email,
+      userRecord?.fullName ?? decodedToken.email
+    );
+
+    if (!resetSuccessEmail.success) {
+      console.warn(
+        "Password reset succeeded but confirmation email failed:",
+        resetSuccessEmail.error
+      );
+    }
+
     res.json({ message: "Password reset successful" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to reset password";
@@ -274,11 +291,10 @@ const resendVerificationOtp = async (req: Request, res: Response) => {
     user.otp = { ...otpData, type: OtpType.EMAIL_VERIFICATION };
     await userRepository.save(user);
 
-    const emailResult = await EmailService.sendOTP(
+    const emailResult = await EmailService.sendEmailVerification(
       user.email,
       otpData.code!,
-      user.fullName ?? user.email,
-      "email_verification"
+      user.fullName ?? user.email
     );
 
     if (!emailResult.success) {
