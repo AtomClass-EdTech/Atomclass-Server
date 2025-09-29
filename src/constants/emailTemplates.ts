@@ -250,13 +250,6 @@ This is an automated message, please do not reply.
         <a class="btn" href="{{resetLink}}" target="_blank" rel="noopener">Reset Password</a>
       </p>
 
-      <!-- Token path for token-based flow -->
-      <div class="token-box">
-        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;color:#555">Your Reset Token</div>
-        <div class="token">{{token}}</div>
-        <p style="margin:12px 0 0 0;color:#6c757d;font-size:13px">Paste this token in the password reset form</p>
-      </div>
-
       <div class="note">
         <ul style="margin:0 0 0 18px;padding:0;">
           <li>This token/link expires in <strong>{{expiryMinutes}} minutes</strong>.</li>
