@@ -42,7 +42,6 @@ export const dbConfig: Record<
 
 const currentDbConfig =
   dbConfig[(process.env.NODE_ENV as EnvironmentTypes)];
-  console.log("Current DB Config: ", currentDbConfig);
 
 const { username, password, host, port, database } = currentDbConfig;
 const portNumber = typeof port === "string" ? parseInt(port, 10) : port;
