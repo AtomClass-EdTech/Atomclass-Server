@@ -31,4 +31,4 @@ router.post("/courses/:id/reviews/:reviewId/replies", courseController.addReview
 // Statistics
 router.get("/courses/:id/stats", courseController.getCourseStats);
 
-export default router;
+export { router as courseRouter };
