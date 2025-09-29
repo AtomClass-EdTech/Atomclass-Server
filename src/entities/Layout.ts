@@ -5,9 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  OneToMany,
-  ManyToOne,
   JoinColumn,
+  OneToOne,
 } from "typeorm";
 import { Course } from "./Course.js";
 
@@ -33,9 +32,9 @@ export class Layout {
     subTitle: string;
   } | null;
 
-  @ManyToOne(() => Course, { onDelete: "SET NULL", nullable: true })
-  @JoinColumn({ name: "teacher_id" })
-  course!: Course | null;
+  // @OneToOne(() => Course, { onDelete: "SET NULL", nullable: true })
+  // @JoinColumn({ name: "teacher_id" })
+  // course!: Course | null;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

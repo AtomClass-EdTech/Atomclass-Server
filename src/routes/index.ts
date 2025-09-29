@@ -13,7 +13,7 @@ const Routers = express.Router();
 // routes
 Routers.use("/auth", authRouter);
 Routers.use("/health", healthRouter);
-Routers.use("/file", [loginRequired], fileRouter);
+Routers.use("/file", fileRouter);
 Routers.use("/users", [loginRequired], userRouter);
 
 

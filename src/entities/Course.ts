@@ -7,8 +7,10 @@ import {
   CreateDateColumn, 
   UpdateDateColumn,
   JoinColumn,
+  OneToOne,
 } from "typeorm";
 import { User } from "./User.js";
+import { Layout } from "./Layout.js";
 
 type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
@@ -114,6 +116,10 @@ export class Course {
   @ManyToOne(() => User, { onDelete: "SET NULL", nullable: true })
   @JoinColumn({ name: "teacher_id" })
   teacher!: User | null;
+
+  // @OneToOne(() => Layout, { onDelete: "SET NULL", nullable: true })
+  // @JoinColumn({ name: "layout_id" })
+  // layout!: Layout | null;
 
   @Column({ type: "timestamp", name: "published_at", nullable: true })
   publishedAt!: Date | null;
