@@ -68,7 +68,7 @@ export const fileController = {
     try {
       await waitForUpload(req, res);
 
-      const bucketName = process.env.AWS_S3_BUCKET_NAME?.trim();
+      const bucketName = "atomclass";
       if (!bucketName) {
         res.status(500).json({
           success: false,
@@ -94,16 +94,34 @@ export const fileController = {
             Bucket: bucketName,
             Key: fileName,
             Body: file.buffer,
-            ...(file.mimetype ? { ContentType: file.mimetype } : {}),
+            ContentType: file.mimetype || 'application/octet-stream',
+            // ACL removed - bucket uses bucket policy instead
           };
 
-          const command = new PutObjectCommand(params);
-          await s3Client.send(command);
-          return encodeURIComponent(fileName);
+          try {
+            const command = new PutObjectCommand(params);
+            await s3Client.send(command);
+            
+            // Return the full S3 URL
+            const fileUrl = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+            return {
+              fileName: encodeURIComponent(fileName),
+              url: fileUrl
+            };
+          } catch (uploadError) {
+            console.error(`Failed to upload ${fileName}:`, uploadError);
+            throw uploadError;
+          }
         }),
       );
 
-      res.json({ payload: { filesName: uploadedFiles } });
+      res.json({ 
+        success: true,
+        payload: { 
+          filesName: uploadedFiles.map(f => f.fileName),
+          filesUrl: uploadedFiles.map(f => f.url)
+        } 
+      });
     } catch (error) {
       console.error("File upload failed:", error);
       if (error instanceof multer.MulterError) {
@@ -114,7 +132,11 @@ export const fileController = {
         return;
       }
 
-      res.status(500).json({ success: false, message: "Failed to upload file" });
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to upload file",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   },
 };
