@@ -23,6 +23,8 @@ export type PaymentProvider = "RAZORPAY" | "MANUAL" | "UNKNOWN";
 type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
 @Entity({ name: "purchases" })
+@Index(["user", "status"])
+@Index(["course", "status"])
 export class Purchase {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
