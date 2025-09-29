@@ -7,8 +7,7 @@ import {
   verifyToken,
 } from "../utils/bcryptUtils.js";
 import { AppDataSource } from "../config/databaseConfig.js";
-import { OtpType, User } from "../entities/User.js";
-import type { UserDevice } from "../entities/UserDevice.js";
+import { OtpType, User, UserDevice } from "../entities/User.js";
 import { OTPService } from "../utils/otp.js";
 import { EmailService } from "../utils/emailHelper.js";
 import { AuthRequest } from "../types/auth.req.types.js";

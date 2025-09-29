@@ -1,8 +1,7 @@
 import crypto from "crypto";
 import { AppDataSource } from "../config/databaseConfig.js";
-import { UserDevice } from "../entities/UserDevice.js";
 import { DeviceLimitExceededError } from "../errors/device-limit-exceeded.js";
-import type { User } from "../entities/User.js";
+import { User, UserDevice } from "../entities/User.js";
 import { Repository } from "typeorm";
 
 const DEVICE_ID_MAX_LENGTH = 190;
@@ -34,7 +33,7 @@ const truncate = (value: string | null | undefined, limit: number): string | nul
   return value.length > limit ? value.slice(0, limit) : value;
 };
 
-const deviceRepository = (): Repository<UserDevice> => AppDataSource.getRepository(UserDevice);
+const userRepository = (): Repository<User> => AppDataSource.getRepository(User);
 
 export const deriveDeviceId = ({
   providedDeviceId,
@@ -69,26 +68,25 @@ export const userDeviceService = {
     userId: string;
     deviceId: string;
   }): Promise<UserDevice | null> => {
-    const repository = deviceRepository();
+    const repository = userRepository();
 
-    const existingDevice = await repository.findOne({
-      where: {
-        user: { id: userId },
-        deviceId,
-      },
+    const user = await repository.findOne({
+      where: { id: userId },
+      select: ["id", "devices"],
     });
+
+    if (!user) {
+      return null;
+    }
+
+    const devices = user.devices || [];
+    const existingDevice = devices.find((d) => d.deviceId === deviceId);
 
     if (existingDevice) {
       return existingDevice;
     }
 
-    const activeCount = await repository.count({
-      where: {
-        user: { id: userId },
-        isActive: true,
-      },
-    });
-
+    const activeCount = devices.filter((d) => d.isActive).length;
     const maxDevices = resolveMaxDevices();
 
     if (activeCount >= maxDevices) {
@@ -111,35 +109,48 @@ export const userDeviceService = {
     userAgent?: string | null;
     ipAddress?: string | null;
   }): Promise<UserDevice> => {
-    const repository = deviceRepository();
-    let device = await repository.findOne({
-      where: {
-        user: { id: userId },
-        deviceId,
-      },
+    const repository = userRepository();
+    const user = await repository.findOne({
+      where: { id: userId },
     });
 
-    const now = new Date();
-
-    if (!device) {
-      device = repository.create({
-        user: { id: userId } as User,
-        deviceId,
-        deviceName: truncate(deviceName, DEVICE_NAME_MAX_LENGTH),
-        userAgent: truncate(userAgent, USER_AGENT_MAX_LENGTH),
-        ipAddress: truncate(ipAddress, IP_MAX_LENGTH),
-        isActive: true,
-        lastSeen: now,
-      });
-    } else {
-      device.deviceName = truncate(deviceName ?? device.deviceName, DEVICE_NAME_MAX_LENGTH);
-      device.userAgent = truncate(userAgent, USER_AGENT_MAX_LENGTH);
-      device.ipAddress = truncate(ipAddress, IP_MAX_LENGTH);
-      device.isActive = true;
-      device.lastSeen = now;
+    if (!user) {
+      throw new Error("User not found");
     }
 
-    return await repository.save(device);
+    const devices = user.devices || [];
+    const now = new Date();
+    
+    const existingIndex = devices.findIndex((d) => d.deviceId === deviceId);
+
+    let device: UserDevice;
+
+    if (existingIndex === -1) {
+      // Create new device
+      device = {
+        deviceId,
+        deviceName: truncate(deviceName, DEVICE_NAME_MAX_LENGTH) || undefined,
+        userAgent: truncate(userAgent, USER_AGENT_MAX_LENGTH) || undefined,
+        ipAddress: truncate(ipAddress, IP_MAX_LENGTH) || undefined,
+        isActive: true,
+        lastSeen: now,
+      };
+      devices.push(device);
+    } else {
+      // Update existing device
+      device = devices[existingIndex];
+      device.deviceName = truncate(deviceName ?? device.deviceName, DEVICE_NAME_MAX_LENGTH) || undefined;
+      device.userAgent = truncate(userAgent, USER_AGENT_MAX_LENGTH) || undefined;
+      device.ipAddress = truncate(ipAddress, IP_MAX_LENGTH) || undefined;
+      device.isActive = true;
+      device.lastSeen = now;
+      devices[existingIndex] = device;
+    }
+
+    user.devices = devices;
+    await repository.save(user);
+
+    return device;
   },
 
   recordLogout: async ({
@@ -149,32 +160,121 @@ export const userDeviceService = {
     userId: string;
     deviceId: string;
   }): Promise<UserDevice | null> => {
-    const repository = deviceRepository();
-    const device = await repository.findOne({
-      where: {
-        user: { id: userId },
-        deviceId,
-      },
+    const repository = userRepository();
+    const user = await repository.findOne({
+      where: { id: userId },
     });
 
-    if (!device) {
+    if (!user) {
       return null;
     }
 
+    const devices = user.devices || [];
+    const deviceIndex = devices.findIndex((d) => d.deviceId === deviceId);
+
+    if (deviceIndex === -1) {
+      return null;
+    }
+
+    const device = devices[deviceIndex];
     device.isActive = false;
     device.lastSeen = new Date();
+    devices[deviceIndex] = device;
 
-    return await repository.save(device);
+    user.devices = devices;
+    await repository.save(user);
+
+    return device;
   },
 
   getActiveDeviceCount: async (userId: string): Promise<number> => {
-    const repository = deviceRepository();
-
-    return repository.count({
-      where: {
-        user: { id: userId },
-        isActive: true,
-      },
+    const repository = userRepository();
+    const user = await repository.findOne({
+      where: { id: userId },
+      select: ["id", "devices"],
     });
+
+    if (!user) {
+      return 0;
+    }
+
+    const devices = user.devices || [];
+    return devices.filter((d) => d.isActive).length;
+  },
+
+  listUserDevices: async (userId: string): Promise<UserDevice[]> => {
+    const repository = userRepository();
+    const user = await repository.findOne({
+      where: { id: userId },
+      select: ["id", "devices"],
+    });
+
+    if (!user) {
+      return [];
+    }
+
+    return user.devices || [];
+  },
+
+  removeDevice: async ({
+    userId,
+    deviceId,
+  }: {
+    userId: string;
+    deviceId: string;
+  }): Promise<boolean> => {
+    const repository = userRepository();
+    const user = await repository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return false;
+    }
+
+    const devices = user.devices || [];
+    const filteredDevices = devices.filter((d) => d.deviceId !== deviceId);
+
+    if (filteredDevices.length === devices.length) {
+      return false; // Device not found
+    }
+
+    user.devices = filteredDevices;
+    await repository.save(user);
+
+    return true;
+  },
+
+  deactivateAllDevices: async (userId: string): Promise<number> => {
+    const repository = userRepository();
+    const user = await repository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return 0;
+    }
+
+    const devices = user.devices || [];
+    const now = new Date();
+    let deactivatedCount = 0;
+
+    user.devices = devices.map((device) => {
+      if (device.isActive) {
+        deactivatedCount++;
+        return {
+          ...device,
+          isActive: false,
+          lastSeen: now,
+        };
+      }
+      return device;
+    });
+
+    if (deactivatedCount > 0) {
+      await repository.save(user);
+    }
+
+    return deactivatedCount;
   },
 };
