@@ -27,6 +27,15 @@ export interface OTPMetadata {
   verified?: boolean;
 }
 
+export interface UserDevice {
+  deviceId: string;
+  deviceName?: string;
+  userAgent?: string;
+  ipAddress?: string;
+  isActive: boolean;
+  lastSeen: Date;
+}
+
 @Entity({ name: "users" })
 export class User {
   @PrimaryGeneratedColumn("uuid")
@@ -54,9 +63,8 @@ export class User {
   })
   cognitoId!: string | null;
 
-  @Column({ type: "varchar", length: 190, nullable: false, name: "full_name" })
-  fullName!: string | null;
-
+  @Column({ type: "varchar", length: 190, name: "full_name" })
+  fullName!: string;
 
   @Column({ type: "varchar", length: 20, nullable: true, name: "phone_number" })
   phoneNumber!: string | null;
@@ -96,7 +104,10 @@ export class User {
   lastLoginUserAgent!: string | null;
 
   @Column({ type: "jsonb", nullable: true })
-  otp?: OTPMetadata | null;
+  otp!: OTPMetadata | null;
+
+  @Column({ type: "jsonb", default: [] })
+  devices!: UserDevice[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
