@@ -69,7 +69,7 @@ export const getTokenFromHeader = async (
     try {
       const verifier = CognitoJwtVerifier.create({
         userPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-        tokenUse: "access",
+        tokenUse: "id",
         clientId: process.env.AWS_COGNITO_CLIENT_ID!,
       });
       const tokenData = (await verifier.verify(token)) as TokenPayload;

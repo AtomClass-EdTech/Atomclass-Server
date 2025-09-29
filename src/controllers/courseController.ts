@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { Course, ICourseData, IReview } from "../entities/Course.js";
 import { User } from "../entities/User.js";
-import { Layout } from "../entities/Layout.js";
+// import { Layout } from "../entities/Layout.js";
 import { AppDataSource } from "../config/databaseConfig.js";
 
 const courseRepository = AppDataSource.getRepository(Course);
 const userRepository = AppDataSource.getRepository(User);
-const layoutRepository = AppDataSource.getRepository(Layout);
+// const layoutRepository = AppDataSource.getRepository(Layout);
 
 export const courseController = {
   createCourse: async (req: Request, res: Response) => {
@@ -97,6 +97,7 @@ export const courseController = {
 
   getAllCourses: async (req: Request, res: Response) => {
     try {
+        console.log("req.query");
       const {
         page = 1,
         limit = 10,
@@ -116,9 +117,8 @@ export const courseController = {
       const queryBuilder = courseRepository
         .createQueryBuilder("course")
         .leftJoinAndSelect("course.teacher", "teacher")
-        .leftJoinAndSelect("course.layout", "layout");
+        // .leftJoinAndSelect("course.layout", "layout");
 
-      // Apply filters
       if (status) {
         queryBuilder.andWhere("course.status = :status", { status });
       }
@@ -148,12 +148,10 @@ export const courseController = {
         );
       }
 
-      // Apply sorting
       const allowedSortFields = ["createdAt", "updatedAt", "name", "price", "ratings", "purchased"];
       const sortField = allowedSortFields.includes(sortBy as string) ? sortBy : "createdAt";
       queryBuilder.orderBy(`course.${sortField}`, sortOrder === "ASC" ? "ASC" : "DESC");
 
-      // Get total count and paginated results
       const [courses, total] = await queryBuilder.skip(skip).take(take).getManyAndCount();
 
       res.json({
@@ -182,7 +180,9 @@ export const courseController = {
 
       const course = await courseRepository.findOne({
         where: { id },
-        relations: ["teacher", "layout"],
+        relations: ["teacher", 
+            // "layout"
+        ],
       });
 
       if (!course) {
@@ -220,7 +220,6 @@ export const courseController = {
         });
       }
 
-      // Handle teacher update
       if (updateData.teacherId) {
         const teacher = await userRepository.findOne({ where: { id: updateData.teacherId } });
         if (!teacher) {
@@ -246,12 +245,10 @@ export const courseController = {
     //     delete updateData.layoutId;
     //   }
 
-      // Handle status change to PUBLISHED
       if (updateData.status === "PUBLISHED" && course.status !== "PUBLISHED") {
         updateData.publishedAt = new Date();
       }
 
-      // Merge and save
       Object.assign(course, updateData);
       const updatedCourse = await courseRepository.save(course);
 
@@ -283,7 +280,6 @@ export const courseController = {
         });
       }
 
-      // Soft delete by archiving
       course.status = "ARCHIVED";
       await courseRepository.save(course);
 
@@ -352,6 +348,10 @@ export const courseController = {
         links: contentData.links || [],
       };
 
+
+      if (!Array.isArray(course.courseData)) {
+        course.courseData = [];
+      }
       course.courseData.push(newContent);
       const updatedCourse = await courseRepository.save(course);
 
@@ -416,36 +416,50 @@ export const courseController = {
     }
   },
 
-  deleteCourseContent: async (req: Request, res: Response) => {
-    try {
-      const { id, contentId } = req.params;
 
-      const course = await courseRepository.findOne({ where: { id } });
+  deleteCourseContent : async (req: Request, res: Response) => {
+  try {
+    const { id, contentId } = req.params;
 
-      if (!course) {
-        return res.status(404).json({
-          success: false,
-          message: "Course not found",
-        });
-      }
+    const course = await courseRepository.findOne({ where: { id } });
 
-      course.courseData = course.courseData.filter((c) => c.id !== contentId);
-      const updatedCourse = await courseRepository.save(course);
-
-      res.json({
-        success: true,
-        message: "Course content deleted successfully",
-        data: updatedCourse,
-      });
-    } catch (error) {
-      console.error("Error deleting course content:", error);
-      res.status(500).json({
+    if (!course) {
+      return res.status(404).json({
         success: false,
-        message: "Failed to delete course content",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: "Course not found",
       });
     }
-  },
+
+   await courseRepository.query(
+      `
+      UPDATE courses
+      SET course_data = (
+        SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb)
+        FROM jsonb_array_elements(course_data) AS elem
+        WHERE elem->>'id' != $1
+      )
+      WHERE id = $2
+      `,
+      [contentId, id]
+    );
+
+    const updatedCourse = await courseRepository.findOne({ where: { id } });
+
+    return res.json({
+      success: true,
+      message: "Course content deleted successfully",
+      data: updatedCourse,
+    });
+
+  } catch (error) {
+    console.error("Error deleting course content:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete course content",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+},
 
 
   addReview: async (req: Request, res: Response) => {
@@ -482,7 +496,6 @@ export const courseController = {
 
       course.reviews.push(newReview);
 
-      // Recalculate average rating
       const totalRating = course.reviews.reduce((sum, review) => sum + review.rating, 0);
       course.ratings = Number((totalRating / course.reviews.length).toFixed(2));
 

@@ -7,10 +7,10 @@ import {
   CreateDateColumn, 
   UpdateDateColumn,
   JoinColumn,
-  OneToOne,
+  // OneToOne,
 } from "typeorm";
 import { User } from "./User.js";
-import { Layout } from "./Layout.js";
+// import { Layout } from "./Layout.js";
 
 type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
@@ -124,7 +124,6 @@ export class Course {
   @Column({ type: "timestamp", name: "published_at", nullable: true })
   publishedAt!: Date | null;
 
-  // All course lessons/modules stored as JSONB
   @Column({ type: "jsonb", name: "course_data", default: [] })
   courseData!: ICourseData[];
 

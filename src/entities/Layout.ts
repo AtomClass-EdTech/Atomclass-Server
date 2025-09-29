@@ -5,10 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  JoinColumn,
-  OneToOne,
+  // JoinColumn,
+  // OneToOne,
 } from "typeorm";
-import { Course } from "./Course.js";
+// import { Course } from "./Course.js";
 
 @Entity({ name: "layouts" })
 export class Layout {
