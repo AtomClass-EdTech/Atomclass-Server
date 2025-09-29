@@ -3,13 +3,14 @@ import { Course, ICourseData, IReview } from "../entities/Course.js";
 import { User } from "../entities/User.js";
 // import { Layout } from "../entities/Layout.js";
 import { AppDataSource } from "../config/databaseConfig.js";
+import { AuthRequest } from "../types/auth.req.types.js";
 
 const courseRepository = AppDataSource.getRepository(Course);
 const userRepository = AppDataSource.getRepository(User);
 // const layoutRepository = AppDataSource.getRepository(Layout);
 
 export const courseController = {
-  createCourse: async (req: Request, res: Response) => {
+  createCourse: async (req: AuthRequest, res: Response) => {
     try {
       const {
         name,
@@ -23,11 +24,12 @@ export const courseController = {
         demoUrl,
         benefits,
         prerequisites,
-        teacherId,
         // layoutId,
         courseData,
         status = "DRAFT",
       } = req.body;
+
+      const email = req.user?.email;
 
       if (!name || !description || !categories || !tags || !level || !demoUrl) {
         return res.status(400).json({
@@ -37,8 +39,8 @@ export const courseController = {
       }
 
       let teacher = null;
-      if (teacherId) {
-        teacher = await userRepository.findOne({ where: { id: teacherId } });
+      if (email) {
+        teacher = await userRepository.findOne({ where: { email } });
         if (!teacher) {
           return res.status(404).json({
             success: false,
