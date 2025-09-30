@@ -124,11 +124,40 @@ export class Course {
   @Column({ type: "timestamp", name: "published_at", nullable: true })
   publishedAt!: Date | null;
 
-  @Column({ type: "jsonb", name: "course_data", default: [] })
+  // Optimized with GIN index for JSONB queries
+  @Index("idx_course_data_gin", { synchronize: false })
+  @Column({ 
+    type: "jsonb", 
+    name: "course_data", 
+    default: [],
+    transformer: {
+      to: (value: ICourseData[]) => value,
+      from: (value: ICourseData[]) => {
+        return value.map(item => ({
+          ...item,
+          id: item.id || crypto.randomUUID()
+        }));
+      }
+    }
+  })
   courseData!: ICourseData[];
 
-  // All reviews stored as JSONB
-  @Column({ type: "jsonb", default: [] })
+  // Optimized with GIN index for JSONB queries
+  @Index("idx_reviews_gin", { synchronize: false })
+  @Column({ 
+    type: "jsonb", 
+    default: [],
+    transformer: {
+      to: (value: IReview[]) => value,
+      from: (value: IReview[]) => {
+        // Ensure each review has an id
+        return value.map(item => ({
+          ...item,
+          id: item.id || crypto.randomUUID()
+        }));
+      }
+    }
+  })
   reviews!: IReview[];
 
   @CreateDateColumn({ name: "created_at" })
@@ -137,3 +166,11 @@ export class Course {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 }
+
+// Migration SQL for creating GIN indexes (run separately):
+// CREATE INDEX idx_course_data_gin ON courses USING GIN (course_data);
+// CREATE INDEX idx_reviews_gin ON reviews USING GIN (reviews);
+// 
+// Optional: Create specific indexes for common queries
+// CREATE INDEX idx_course_data_id ON courses USING GIN ((course_data->'id'));
+// CREATE INDEX idx_course_data_video_status ON courses USING GIN ((course_data->'videoStatus'));

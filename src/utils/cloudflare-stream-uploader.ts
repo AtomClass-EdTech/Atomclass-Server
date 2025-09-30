@@ -18,9 +18,11 @@ interface VideoUploadOptions {
 
 interface CloudflareStreamVideo {
   uid: string;
+  creator?: string | null;
   thumbnail?: string;
   thumbnailTimestampPct?: number;
   readyToStream: boolean;
+  readyToStreamAt?: string;
   status: {
     state: string;
     pctComplete?: string;
@@ -30,6 +32,7 @@ interface CloudflareStreamVideo {
   meta: Record<string, any>;
   created: string;
   modified: string;
+  scheduledDeletion?: string | null;
   size?: number;
   preview?: string;
   allowedOrigins?: string[];
@@ -604,30 +607,30 @@ export class CloudflareStreamUploader {
   /**
    * Format bytes to human readable size
    */
-  private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-  }
+  // private formatBytes(bytes: number): string {
+  //   if (bytes === 0) return '0 Bytes';
+  //   const k = 1024;
+  //   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  //   const i = Math.floor(Math.log(bytes) / Math.log(k));
+  //   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  // }
 
   /**
    * Format seconds to human readable duration
    */
-  private formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+  // private formatDuration(seconds: number): string {
+  //   const hours = Math.floor(seconds / 3600);
+  //   const minutes = Math.floor((seconds % 3600) / 60);
+  //   const secs = Math.floor(seconds % 60);
 
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    } else {
-      return `${secs}s`;
-    }
-  }
+  //   if (hours > 0) {
+  //     return `${hours}h ${minutes}m ${secs}s`;
+  //   } else if (minutes > 0) {
+  //     return `${minutes}m ${secs}s`;
+  //   } else {
+  //     return `${secs}s`;
+  //   }
+  // }
 }
 
 export default CloudflareStreamUploader;

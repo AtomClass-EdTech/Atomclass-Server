@@ -1,7 +1,8 @@
 import { ICourseData, Course } from './../entities/Course.js';
 import { Repository } from 'typeorm';
-import CloudflareStreamUploader from './cloudflare-stream-uploader.js';
-import { AppDataSource } from '../config/databaseConfig.js';
+import CloudflareStreamUploader from '../utils/cloudflare-stream-uploader.js'; 
+import { loadEnv } from '../config/loadEnv.js';
+// import { AppDataSource } from '../config/databaseConfig.js';
 
 interface ChapterVideoData {
   sectionTitle: string;
@@ -15,7 +16,9 @@ interface ChapterVideoData {
   }>;
 }
 
-const courseRepository =  AppDataSource.getRepository(Course);
+loadEnv()
+
+// const courseRepository =  AppDataSource.getRepository(Course);
 export class CourseVideoSyncService {
   constructor(
     private courseRepo: Repository<Course>,
@@ -79,8 +82,8 @@ export class CourseVideoSyncService {
             
             // Cloudflare Stream data
             videoCfUid: uploadResult.uid,
-            videoCfPlaybackId: uploadResult.playback?.id || null,
-            videoHlsUrl: uploadResult.playback?.hls || null,
+            videoCfPlaybackId: undefined,
+            videoHlsUrl: uploadResult.playback?.hls || undefined,
             videoStatus: this.mapVideoStatus(uploadResult.status?.state),
             videoMeta: uploadResult.meta || null,
             videoThumbnail: uploadResult.thumbnail 
@@ -179,8 +182,8 @@ export class CourseVideoSyncService {
       description: videoData.description,
       videoLength: videoData.videoLength,
       videoCfUid: uploadResult.uid,
-      videoCfPlaybackId: uploadResult.playback?.id || null,
-      videoHlsUrl: uploadResult.playback?.hls || null,
+      // videoCfPlaybackId: uploadResult.playback?.id || null,
+      videoHlsUrl: uploadResult.playback?.hls || undefined,
       videoStatus: this.mapVideoStatus(uploadResult.status?.state),
       videoMeta: uploadResult.meta || null,
       videoThumbnail: uploadResult.thumbnail 
@@ -270,107 +273,107 @@ export class CourseVideoSyncService {
 // USAGE EXAMPLE
 // ============================================
 
-async function uploadNewCourse() {
-  const courseId = 'existing-course-id'; // Get from your database
+// async function uploadNewCourse() {
+//   const courseId = 'existing-course-id'; // Get from your database
 
-  const courseVideoService = new CourseVideoSyncService(
-    courseRepository,
-    new CloudflareStreamUploader(
-      process.env.CF_ACCOUNT_ID!,
-      process.env.CF_API_TOKEN!
-    )
-  );
+//   const courseVideoService = new CourseVideoSyncService(
+//     courseRepository,
+//     new CloudflareStreamUploader(
+//       process.env.CF_ACCOUNT_ID!,
+//       process.env.CF_API_TOKEN!
+//     )
+//   );
 
-  // Define your course structure with local video files
-  const chaptersData: ChapterVideoData[] = [
-    {
-      sectionTitle: 'Python Basics',
-      sectionIndex: 0,
-      lessons: [
-        {
-          title: 'Introduction to Python',
-          description: 'Learn what Python is and why it\'s popular',
-          videoFilePath: './videos/chapter1/01-intro.mp4',
-          videoLength: 480, // 8 minutes in seconds
-          links: [
-            { title: 'Python Official Site', url: 'https://python.org' }
-          ]
-        },
-        {
-          title: 'Installing Python',
-          description: 'How to install Python on your system',
-          videoFilePath: './videos/chapter1/02-install.mp4',
-          videoLength: 600
-        }
-      ]
-    },
-    {
-      sectionTitle: 'Variables and Data Types',
-      sectionIndex: 1,
-      lessons: [
-        {
-          title: 'Understanding Variables',
-          description: 'What are variables and how to use them',
-          videoFilePath: './videos/chapter2/01-variables.mp4',
-          videoLength: 720
-        },
-        {
-          title: 'String Data Type',
-          description: 'Working with strings in Python',
-          videoFilePath: './videos/chapter2/02-strings.mp4',
-          videoLength: 900
-        },
-        {
-          title: 'Numeric Data Types',
-          description: 'Integers, floats, and complex numbers',
-          videoFilePath: './videos/chapter2/03-numbers.mp4',
-          videoLength: 840
-        },
-        {
-          title: 'Boolean Data Type',
-          description: 'True, False, and logical operations',
-          videoFilePath: './videos/chapter2/04-boolean.mp4',
-          videoLength: 540
-        }
-      ]
-    }
-    // Add remaining 18 chapters...
-  ];
+//   // Define your course structure with local video files
+//   const chaptersData: ChapterVideoData[] = [
+//     {
+//       sectionTitle: 'Python Basics',
+//       sectionIndex: 0,
+//       lessons: [
+//         {
+//           title: 'Introduction to Python',
+//           description: 'Learn what Python is and why it\'s popular',
+//           videoFilePath: './videos/chapter1/01-intro.mp4',
+//           videoLength: 480, // 8 minutes in seconds
+//           links: [
+//             { title: 'Python Official Site', url: 'https://python.org' }
+//           ]
+//         },
+//         {
+//           title: 'Installing Python',
+//           description: 'How to install Python on your system',
+//           videoFilePath: './videos/chapter1/02-install.mp4',
+//           videoLength: 600
+//         }
+//       ]
+//     },
+//     {
+//       sectionTitle: 'Variables and Data Types',
+//       sectionIndex: 1,
+//       lessons: [
+//         {
+//           title: 'Understanding Variables',
+//           description: 'What are variables and how to use them',
+//           videoFilePath: './videos/chapter2/01-variables.mp4',
+//           videoLength: 720
+//         },
+//         {
+//           title: 'String Data Type',
+//           description: 'Working with strings in Python',
+//           videoFilePath: './videos/chapter2/02-strings.mp4',
+//           videoLength: 900
+//         },
+//         {
+//           title: 'Numeric Data Types',
+//           description: 'Integers, floats, and complex numbers',
+//           videoFilePath: './videos/chapter2/03-numbers.mp4',
+//           videoLength: 840
+//         },
+//         {
+//           title: 'Boolean Data Type',
+//           description: 'True, False, and logical operations',
+//           videoFilePath: './videos/chapter2/04-boolean.mp4',
+//           videoLength: 540
+//         }
+//       ]
+//     }
+//     // Add remaining 18 chapters...
+//   ];
 
-  try {
-    // Upload all videos and sync with database
-    await courseVideoService.uploadAndSyncCourseVideos(courseId, chaptersData);
+//   try {
+//     // Upload all videos and sync with database
+//     await courseVideoService.uploadAndSyncCourseVideos(courseId, chaptersData);
 
-    // Get organized course structure
-    const structure = await courseVideoService.getCourseStructure(courseId);
-    console.log('\n📊 Course Structure:');
-    console.log(JSON.stringify(structure, null, 2));
+//     // Get organized course structure
+//     const structure = await courseVideoService.getCourseStructure(courseId);
+//     console.log('\n📊 Course Structure:');
+//     console.log(JSON.stringify(structure, null, 2));
 
-  } catch (error) {
-    console.error('Upload failed:', error);
-  }
-}
+//   } catch (error) {
+//     console.error('Upload failed:', error);
+//   }
+// }
 
-// Example: Add a single video to existing chapter
-async function addExtraLesson() {
-  const courseVideoService = new CourseVideoSyncService(
-    courseRepository,
-    new CloudflareStreamUploader(
-      process.env.CF_ACCOUNT_ID!,
-      process.env.CF_API_TOKEN!
-    )
-  );
+// // Example: Add a single video to existing chapter
+// async function addExtraLesson() {
+//   const courseVideoService = new CourseVideoSyncService(
+//     courseRepository,
+//     new CloudflareStreamUploader(
+//       process.env.CF_ACCOUNT_ID!,
+//       process.env.CF_API_TOKEN!
+//     )
+//   );
 
-  await courseVideoService.addVideoToChapter(
-    'course-python-101',
-    1, // Chapter index
-    {
-      title: 'Bonus: Type Conversion',
-      description: 'Converting between different data types',
-      videoFilePath: './videos/chapter2/bonus-conversion.mp4',
-      videoLength: 420
-    }
-  );
-}
+//   await courseVideoService.addVideoToChapter(
+//     'course-python-101',
+//     1, // Chapter index
+//     {
+//       title: 'Bonus: Type Conversion',
+//       description: 'Converting between different data types',
+//       videoFilePath: './videos/chapter2/bonus-conversion.mp4',
+//       videoLength: 420
+//     }
+//   );
+// }
 
 export default CourseVideoSyncService;
